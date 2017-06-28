@@ -1,0 +1,237 @@
+---
+title: "SCAR Southern Ocean Diet and Energetics Database"
+author: "Core working group:Antonio Ag\u00fcera, Ma\u00eblle Connan, Hauke Flores, Luis H\u00fcckst\u00e4dt, Mary-Anne Lea, Julie McInnes, Ben Raymond, Fokje Schaafsma, Gabriele Stowasser, Rowan Trebilco, Anton van de Putte, Andrea Walters, Jos\u00e9 Xavier"
+date: "<div id='logo_footer'><img src='extra/scar_logo_sm.jpg' /></div>"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    seal: false
+    self_contained: false
+    css: ["default", "extra/extra.css"]
+    chakra: libs/remark-latest.min.js
+    nature:
+      highlightStyle: github
+      highlightLines: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+options(knitr.kable.NA="")
+knitr::opts_chunk$set(fig.path="extra/",echo=FALSE,warning=FALSE,message=FALSE,cache=TRUE)
+```
+```{r include=FALSE}
+library(dplyr)
+library(knitr)
+library(xtable)
+library(htmltools)
+library(sohungry)
+x <- so_diet()
+xi <- so_isotopes()
+```
+
+class: middle
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 20%
+background-position: 98% 2%
+
+# SCAR Southern Ocean Diet and Energetics Database
+
+https://data.aad.gov.au/trophic
+
+### Core working group:
+
+Antonio Ag&uuml;era - Ma&euml;lle Connan - Hauke Flores - Luis H&uuml;ckst&auml;dt - Mary-Anne Lea - Julie McInnes - Ben Raymond - Fokje Schaafsma - Gabriele Stowasser - Rowan Trebilco - Anton van de Putte - <u>Andrea Walters</u> - Jos&eacute; Xavier
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# General aims
+
+Information on diet and energy flow = fundamental to a range of studies
+
+### This project
+- a centralised database of data related to diet and energy flow from
+
+- a product of the SCAR community and open for all to participate in and use
+
+<img width="40%" src="extra/Grey-headed-Albatross-JCleeland.jpg" />
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data types
+
+- conventional diet data (e.g. stomach, scat contents)
+
+- stable isotopes
+
+- DNA-based diet identification
+
+- fatty acids
+
+- energetic content
+
+Perhaps:
+
+- allometric equations (length-mass relationships)
+
+- other?
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Current data holdings
+
+### Seeded from a previous Southern Ocean diet database:
+
+Conventional diet: `r sprintf("%d",round(nrow(x)/100)*100)` records / `r round(length(unique(c(x$predator_name,x$prey_name)))/10)*10` taxa / `r round(length(unique(x$source_id))/10)*10` studies
+
+Stable isotopes: `r sprintf("%d",round(nrow(xi)/100)*100)` records / `r round(length(unique(xi$taxon_name))/10)*10` taxa / `r round(length(unique(xi$source_id))/10)*10` studies
+
+### Now being added:
+
+Conventional diet: benthic and myctophid fish
+
+Stable isotopes: seabirds, urchins, orca, seals, toothfish
+
+DNA-based diet: albatrosses, krill
+
+Energetic content: euphausiids, amphipods, fish, squid, jellyfish
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Papers
+
+Papers being prepared while the database is being populated:
+
+1. Energetics review (Fokje Schaafsma et al.)
+
+1. Diet and energetics data in the context of ecosystem modelling and size-based models (Rowan Trebilco et al.)
+
+1. Mesopelagic prey, isoscapes, acoustics (Andrea Walters et al.)
+
+1. Food web/network structures (Stacey McCormack, Jess Melbourne-Thomas et al.)
+
+1. Fatty acids (Ma&euml;lle Connan et al.)
+
+1. Albatross diet (Julie McInnes et al.)
+
+
+Please make contact if you would like to contribute or see scope for other papers!
+
+---
+background-image: url(extra/AtlanticFWSilhouettes_sm.png)
+background-size: auto 90%
+background-position: center middle
+
+<span style="position:fixed; bottom:10px; right:10px;">Image: Stacey McCormack</span>
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Software tools
+
+R package in development for accessing and manipulating these data.
+
+### Example usage
+
+Load the package and retrieve diet data:
+```{r eval=FALSE, echo=TRUE}
+library(sohungry)
+x <- so_diet()
+```
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# R package
+
+A summary of what *Electrona carlsbergi* eats:
+```{r eval=FALSE, echo=TRUE}
+x %>% filter_by_predator_name("Electrona carlsbergi") %>%
+  diet_summary(summary_type="prey")
+```
+
+```{r echo=FALSE, cache=TRUE}
+x %>% filter_by_predator_name("Electrona carlsbergi") %>%
+  diet_summary(summary_type="prey") %>%
+  dplyr::select(-starts_with("N_")) %>%
+  ##xtable %>% print(type="html",row.names=FALSE)
+  dplyr::mutate_all(funs(replace(.,is.nan(.),NA))) %>%
+  rename(Prey=prey,
+    "Fraction diet by weight"=fraction_diet_by_weight,
+    "Fraction occurrence"=fraction_occurrence,
+    "Fraction diet by prey items"=fraction_diet_by_prey_items) %>%
+  kable(format="markdown",digits=2)
+```
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# R package
+
+Which studies have looked at the predators of squid?
+```{r eval=FALSE, echo=TRUE}
+x %>% dplyr::filter(prey_worms_order=="Teuthida") %>%
+  select(source_id,source_details) %>% distinct
+```
+```{r echo=FALSE, cache=TRUE}
+x %>% dplyr::filter(prey_worms_order=="Teuthida") %>%
+  select(source_id,source_details) %>% distinct %>%
+  rename("Source&nbsp;ID"=source_id,Details=source_details) %>%
+  kable(format="markdown")
+```
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# How can I get involved?
+
+1. **Contribute data** (particularly from under-represented taxa, regions, and data types). If you have data from an unpublished paper, the data can be embargoed until publication.
+
+  - download the template and submit your data: https://github.com/SCAR/dietandenergetics
+
+      Or, if you have a lot of data in a consistent format, we may be able to script a batch import.
+
+1. **Join a group** working on a paper
+
+1. **Make suggestions** so that this is more useful to the SCAR community
+  - how you might use such data
+  - what analytical functionality you would like to see
+
+---
+
+class: bottom
+background-image: url(./extra/iceland.gif)
+background-size: auto 100%
+background-position: center center
+
+# Contact
+```{r echo=FALSE}
+aw <- paste0("andrea",".","walters","@","utas.edu.au")
+br <- paste0("ben",".","raymond","@","aad.gov.au")
+```
+
+`r tags$a(href=paste0("mailto:",aw),aw)` or `r tags$a(href=paste0("mailto:",br),br)`
+
+

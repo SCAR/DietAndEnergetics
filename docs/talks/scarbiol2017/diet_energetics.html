@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SCAR Southern Ocean Diet and Energetics Database</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Core working group:Antonio Agüera, Maëlle Connan, Hauke Flores, Luis Hückstädt, Mary-Anne Lea, Julie McInnes, Ben Raymond, Fokje Schaafsma, Gabriele Stowasser, Rowan Trebilco, Anton van de Putte, Andrea Walters, José Xavier" />
+    <link href="libs/remark-css/example.css" rel="stylesheet" />
+    <link rel="stylesheet" href="extra\extra.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+
+class: middle
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 20%
+background-position: 98% 2%
+
+# SCAR Southern Ocean Diet and Energetics Database
+
+https://data.aad.gov.au/trophic
+
+### Core working group:
+
+Antonio Ag&amp;uuml;era - Ma&amp;euml;lle Connan - Hauke Flores - Luis H&amp;uuml;ckst&amp;auml;dt - Mary-Anne Lea - Julie McInnes - Ben Raymond - Fokje Schaafsma - Gabriele Stowasser - Rowan Trebilco - Anton van de Putte - &lt;u&gt;Andrea Walters&lt;/u&gt; - Jos&amp;eacute; Xavier
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# General aims
+
+Information on diet and energy flow = fundamental to a range of studies
+
+### This project
+- a centralised database of data related to diet and energy flow from
+
+- a product of the SCAR community and open for all to participate in and use
+
+&lt;img width="40%" src="extra/Grey-headed-Albatross-JCleeland.jpg" /&gt;
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data types
+
+- conventional diet data (e.g. stomach, scat contents)
+
+- stable isotopes
+
+- DNA-based diet identification
+
+- fatty acids
+
+- energetic content
+
+Perhaps:
+
+- allometric equations (length-mass relationships)
+
+- other?
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Current data holdings
+
+### Seeded from a previous Southern Ocean diet database:
+
+Conventional diet: 26500 records / 1090 taxa / 320 studies
+
+Stable isotopes: 1800 records / 220 taxa / 30 studies
+
+### Now being added:
+
+Conventional diet: benthic and myctophid fish
+
+Stable isotopes: seabirds, urchins, orca, seals, toothfish
+
+DNA-based diet: albatrosses, krill
+
+Energetic content: euphausiids, amphipods, fish, squid, jellyfish
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Papers
+
+Papers being prepared while the database is being populated:
+
+1. Energetics review (Fokje Schaafsma et al.)
+
+1. Diet and energetics data in the context of ecosystem modelling and size-based models (Rowan Trebilco et al.)
+
+1. Mesopelagic prey, isoscapes, acoustics (Andrea Walters et al.)
+
+1. Food web/network structures (Stacey McCormack, Jess Melbourne-Thomas et al.)
+
+1. Fatty acids (Ma&amp;euml;lle Connan et al.)
+
+1. Albatross diet (Julie McInnes et al.)
+
+
+Please make contact if you would like to contribute or see scope for other papers!
+
+---
+background-image: url(extra/AtlanticFWSilhouettes_sm.png)
+background-size: auto 90%
+background-position: center middle
+
+&lt;span style="position:fixed; bottom:10px; right:10px;"&gt;Image: Stacey McCormack&lt;/span&gt;
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Software tools
+
+R package in development for accessing and manipulating these data.
+
+### Example usage
+
+Load the package and retrieve diet data:
+
+```r
+library(sohungry)
+x &lt;- so_diet()
+```
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# R package
+
+A summary of what *Electrona carlsbergi* eats:
+
+```r
+x %&gt;% filter_by_predator_name("Electrona carlsbergi") %&gt;%
+  diet_summary(summary_type="prey")
+```
+
+
+|Prey                                       | Fraction diet by weight| Fraction occurrence| Fraction diet by prey items|
+|:------------------------------------------|-----------------------:|-------------------:|---------------------------:|
+|&lt;i&gt;Euphausia superba&lt;/i&gt; (Antarctic krill) |                        |                0.02|                        0.00|
+|Chaetognatha (arrow worms)                 |                    0.10|                    |                        0.33|
+|Copepoda (copepods)                        |                        |                0.05|                        0.04|
+|Crustacea (crustaceans)                    |                    0.11|                0.41|                        0.15|
+|Euphausiids (other krill)                  |                    0.32|                0.10|                        0.04|
+|Fish                                       |                    0.12|                    |                            |
+|Heterorhabdidae                            |                        |                0.01|                        0.00|
+|Hyperiidea (hyperiid amphipods)            |                    0.41|                0.20|                        0.04|
+|Malacostraca (class of crustaceans)        |                    0.01|                0.20|                        0.08|
+|Maxillopoda (class of crustaceans)         |                    0.04|                0.10|                        0.24|
+|Salps                                      |                        |                0.20|                        0.05|
+|Uncategorized group                        |                    0.38|                0.41|                        0.30|
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# R package
+
+Which studies have looked at the predators of squid?
+
+```r
+x %&gt;% dplyr::filter(prey_worms_order=="Teuthida") %&gt;%
+  select(source_id,source_details) %&gt;% distinct
+```
+
+| Source&amp;nbsp;ID|Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|--------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|              5|Cherel Y (2008) Isotopic niches of emperor and Adelie penguins in Adelie Land, Antarctica. Marine Biology 154: 813-821                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|             27|Cherel Y, Bocher P, Trouve C, Weimerskirch H (2002) Diet and feeding ecology of blue petrels Halobaena caerulea at Iles Kerguelen, Southern Indian Ocean. Marine Ecology Progress Series 228: 283-299                                                                                                                                                                                                                                                                                                                                                                         |
+|             33|Gales, N.J. and Burton, H.R. (1988) Use of emetics and anaesthesia for dietary assessment of Weddell seals. Australian Wildlife Research 15:423433                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|             48|Reid K, Trathan PN, Croxall JP, Hill HJ (1996) Krill caught by predators and nets: differences between species and techniques. Mar Ecol Prog Ser 140:1320                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|             50|RIDOUX, V. 1994. The diets and dietary segregation of seabirds at the subantarctic Crozet Islands. Mar. Orn. 22: 1192                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|             56|THOMPSON, K.R. 1992. Quantitative analysis of the use of discards from squid trawlers by Black-browed Albatross Diomedea melanophris in the vicinity of the Falkland Islands. Ibis 134: 1121                                                                                                                                                                                                                                                                                                                                                                                 |
+|             58|WEIMERSKIRCH, H., JOUVENTIN, P. &amp; STAHL, J.-C. 1986. Comparative ecology of the six albatrosses breeding on the Crozet Islands. Ibis 128: 195213                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|             59|Weimerskirch H, Bartle JA, Jouventin P, Stahl JC (1988). Foraging Ranges and Partitioning of Feeding Zones in Three Species of Southern Albatrosses. The Condor, 90(1):214-219                                                                                                                                                                                                                                                                                                                                                                                                |
+|             60|WILLIAMS, A.J. &amp; IMBER, M.J. 1982. Ornithological observations at Gough Island in 1979, 1980 and 1981. S. Afr. J. Antarct. Res. 12: 4045                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|             61|Green, K., Kerry, K.R., Disney, T., and Clarke, M.R. (1986) Dietary studies of light-mantled sooty albatrosses Phoebetria palpebrata from Macquarie and Heard Islands. Marine Ornithology 26:1926                                                                                                                                                                                                                                                                                                                                                                            |
+|             78|Croxall &amp; Prince (unpublished) As cited in Croxall JP, Prince PA (1987) Seabirds as predators on marine resources, especially Krill, at South Georgia. In: Croxall JP (ed) Seabirds: feeding ecology and role in marine ecosystems. Cambridge University Press, London, p 347–368                                                                                                                                                                                                                                                                                             |
+|             79|CROXALL, J.P., STEELE, W.K, MC INNES, S.J. &amp; PRINCE, P.A. 1995. Breeding distribution of the Snow Petrel Pagodroma nivea. Marine Ornithology 23: 6999                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|             85|HUNTER, S. 1983. The food and feeding ecology of the giant petrels Macronectes halli and Macronectes giganteus at South Georgia. J. Zool., Lond. 200: 521-538; Hunter S (1984) Breeding biology and population dynamics of giant petrels Macronectes at South Georgia (Aves: Procellariiformes). J Zool Lond 203:441460 (as cited in Croxall JP, Prince PA (1987) Seabirds as predators on marine resources, especially Krill, at South Georgia. In: Croxall JP (ed) Seabirds: feeding ecology and role in marine ecosystems. Cambridge University Press, London, p 347368) |
+|             91|Hindell, M. (1988) The diet of the royal penguin Eudyptes schlegeli at Macquarie Island. Emu 88:219226                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|             93|Lorentsen, S.-H., Klages, N. and Røv, N. (1998) Diet and prey consumption of Antarctic petrels Thalassoica antarctica at Svarthamaren, Dronning Maud Land, and at sea outside the colony. Polar Biology 19(6): 414428                                                                                                                                                                                                                                                                                                                                                        |
+|             99|Wienecke, B.C. and Robertson, G. (1997) Foraging space of emperor penguins Aptenodytes forsteri in Antarctic shelf waters in winter. Marine Ecology Progress Series 159:249263                                                                                                                                                                                                                                                                                                                                                                                               |
+|            102|Connan, M., Cherel, Y., and Mayzaud. (2007) Lipids from stomach oil of procellariiform seabirds document the importance of myctophid fish in the Southern Ocean. Limnology and Oceanography 52(6): 24452455                                                                                                                                                                                                                                                                                                                                                                  |
+|            104|Barrera-Oro, E.B., Casaux, R.J., Marschoff, E.R. (2005) Dietary composition of juvenile Dissostichus eleginoides (Pisces, Nototheniidae) around Shag Rocks and South Georgia, Antarctica. Polar Biology 28: 637-641                                                                                                                                                                                                                                                                                                                                                           |
+|            105|Wienecke, B. and Robertson, G. (2006) Comparison of foraging strategies of incubating king penguins Aptenodytes patagonicus from Macquarie and Heard islands. Polar Biology 29: 424438                                                                                                                                                                                                                                                                                                                                                                                       |
+|            106|Tremblay, Y. and Cherel, Y. (2003) Geographic variatin in the foraging behaviour, diet and chick growth of rockhopper penguins. Marine Ecology Progress Series 251: 279297                                                                                                                                                                                                                                                                                                                                                                                                   |
+|            107|Lea, MA., Cherel,Y., Guinet, C., and Nichols, P.D. (2002) Antarctic fur seals foraging in the Polar Frontal Zone: inter-annual shifts in diet as shown from fecal and fatty acid analyses. Marine Ecology Progress Series 245: 281297                                                                                                                                                                                                                                                                                                                                        |
+|            112|Klages, N.T.W., Gales, R.P., and Pemberton, D. (1989) Dietary segregation of Macaroni and Rockhopper Penguins at Heard Island. Australian Wildlife Research 16: 599604                                                                                                                                                                                                                                                                                                                                                                                                       |
+|            118|Weimerskirch, H., Fradet, G., and Cherel, Y. (1999) Natural and experimental changes in chick provisioning in a long-lived seabird, the Antarctic prion. Journal of Avian Biology 30: 165174                                                                                                                                                                                                                                                                                                                                                                                 |
+|            119|Green, K. and Wong, V. (1992) The diet of gentoo penguins Pygoscelis papua in early winter at Heard Island. Corella 16 (5): 129132                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|            125|Cherel, Y., Weimerskirch, H., and Trouve, C. (2002) Dietary evidence for spatial foraging segregation in sympatric albatrosses (Diomedea spp.) rearing chicks at Iles Nuageuses, Kerguelen. Marine Biology 141:11171129                                                                                                                                                                                                                                                                                                                                                      |
+|            127|Klages, N.T.W., Pemberton, D., and Gales, R.P. (1990) The diets of king and gentoo penguins at Heard Island. Australian Wildlife Research 17: 5360                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|            128|Berrow, S.D., Croxall, J.P. (1999) The diet of white-chinned petrels Procellaria aequinoctialis, Linnaeus 1758, in years of contrasting prey availability at South Georgia. Antarctic Science 11 (3): 283292                                                                                                                                                                                                                                                                                                                                                                 |
+|            138|Croxall, J.P., Prince, P.A. (1980) The food of gentoo penguins Pygoscelis papua and Macaroni penguins Eudyptes chrysolophus at South Georgia. Ibis 122: 245253                                                                                                                                                                                                                                                                                                                                                                                                               |
+|            139|Croxall,J.P., Prince, P.A. (1987) Seabirds as predators on marine resources, especially krill, at South Georgia. IN Croxall J.P. (ed) Seabirds: feeding ecology and role in marine ecosystems. Cambridge University Press, Cambridge                                                                                                                                                                                                                                                                                                                                          |
+|            143|Doidge, D.W. and Croxall, J.P. (1985). Diet and energy budget of the antarctic fur seal, Arctocephalus gazella, at South Georgia. In Siegfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic nutrient cycles and food webs. Berlin, Springer-Verlag: 523-550                                                                                                                                                                                                                                                                                                             |
+|            146|Phillips, R.A., Phalan, B., Forster, I.P. (2004) Diet and long-term changes in population size and productivity of brown skuas Catharacta antarctica lonnbergi at Bird Island, South Georgia. Polar Biology 27: 555561                                                                                                                                                                                                                                                                                                                                                       |
+|            147|Croxall, J.P., Hall, A.J., Hill, H.J., North, A.W., Rodhouse, P.G. (1995) The food and feeding ecology of the white-chinned petrel Procellaria aequinoctialis  at South Georgia. Journal of Zoology 237: 133150                                                                                                                                                                                                                                                                                                                                                              |
+|            151|Coria, N., Libertelli, M., Casaux, R., Darrieu, C. (2000) Inter-annual variation in the autumn diet of the gentoo penguin at Laurie Island, Antarctica. Waterbirds 23(3): 511517                                                                                                                                                                                                                                                                                                                                                                                             |
+|            152|Croxall, J.P., Hill, H.J., Lidstone-Scott, R., O'Connell, M.J., Prince, P.A. (1988) Food and feeding ecology of Wilson's storm petrel Oceanites oceanicus at South Georgia. Journal of Zoology 216: 83102                                                                                                                                                                                                                                                                                                                                                                    |
+|            153|Fenaughty, J.M., Stevens, D.W., Hanchet, S.M. (2003) Diet of the Antarctic toothfish (Dissostichus mawsoni) from the Ross Sea, Antarctica (CCAMLR statistical subarea 88.1). CCAMLR Science 10                                                                                                                                                                                                                                                                                                                                                                                |
+|            159|Casaux, R., Baroni, A., Ramon, A., Carlini, A., Bertolin, M., DiPrinzio, C.Y. (2009) Diet of the Leopard Seal Hydrurga leptonyx at the Danco Coast, Antarctic Peninsula. Polar Biology 32: 307310                                                                                                                                                                                                                                                                                                                                                                            |
+|            160|Xavier, J.C., Trathan, P.N., Croxall, J.P., Wood, A.G., Podesta, G., Rodhouse, P.G. (2004) Foraging ecology and interactions with fisheries of wandering albatrosses (Diomedea exulans) breeding at South Georgia. Fisheries Oceanography 13(5): 324344                                                                                                                                                                                                                                                                                                                      |
+|            161|Cherel, Y., Kooyman, G.L. (1998) Food of emperor penguins (Aptenodytes forsteri) in the western Ross Sea, Antarctica. Marine Biology 130: 335344                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|            163|Schramm, M. (1986) The diet of chicks of great-winged, Kerguelen and soft-plumaged petrels at the Prince Edward  Islands. Ostrich 57: 915                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|            186|Casaux, R., Ramon, A. (2002) The diet of the South Georgia shag Phalacrocorax georgianus at South Orkney Islands in five consecutive years. Polar Biology 25: 557561                                                                                                                                                                                                                                                                                                                                                                                                         |
+|            187|Ciaputa, P., Sicinski, J. (2006) Seasonal and annual changes in Antarctic fur seal (Arctocephalus gazella) diet in the area of Admiralty Bay, King George Island, South Shetland Islands. Polish Polar Research 27(2): 171184                                                                                                                                                                                                                                                                                                                                                |
+|            189|Lynnes, A.S., Reid, K., Croxall, J.P. (2004) Diet and reproductive success of Adelie and chinstrap penguins: linking response of predators to prey population dynamics. Polar Biology 27: 544554                                                                                                                                                                                                                                                                                                                                                                             |
+|            219|Ainley, D.G., O’Connor, E.F. &amp; Boekelheide, R.J. 1984. The marine ecology of birds in the Ross Sea, Antarctica. Ornithogical Monographs 32: 1–97                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|            223|Conroy JWH (1972) Ecological aspects of the biology of the giant petrel Macronectes giganteus (Gmelin) in the maritime Antarctic. Sci Rep Br Antarct Surv 75:174                                                                                                                                                                                                                                                                                                                                                                                                             |
+|            224|Green, K., Burton, H.R., and Williams, R. (1989) The diet of Antarctic fur seals Arctocephalus gazella (Peters) during the breeding season at Heard Island. Antarctic Science 1(4): 317324                                                                                                                                                                                                                                                                                                                                                                                   |
+|            232|Deagle BE, Gales NJ, Evans K, Jarman SN, Robinson S, et al. (2007) Studying Seabird Diet through Genetic Analysis of Faeces: A Case Study on Macaroni Penguins (Eudyptes chrysolophus). PLoS ONE 2(9): e831.                                                                                                                                                                                                                                                                                                                                                                  |
+|            233|Lu, C.C. and Williams, R. (1994) Contribution to the biology of squid in the Prydz Bay region, Antarctica. Antarctic Science 6(2):223-229                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|            236|Blankley, W. O., Grindley, J. R. (1985). The intertidal and shallow subtidal food web at Marion Island. In: Siegfried W. R., Condy, P. R., Laws, R. M. (eds.) Antarctic nutrient cycles and food webs. Springer. Berlin, p. 630-636                                                                                                                                                                                                                                                                                                                                           |
+|            238|Duhamel, G. and Hureau, J.C. (1985) The role of zooplankton in the diets of certain sub-Antarctic marine fish. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp.421-429                                                                                                                                                                                                                                                                                                                              |
+|            239|Duhamel, G. (1981) Caracteristiques biologiques des principales especes de poissons du plateau continental des iles Kerguelen. Cybium 3e serie, 5(1):19-33. As cited in Duhamel, G. and Hureau, J.C. (1985) The role of zooplankton in the diets of certain sub-Antarctic marine fish. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp.421-429                                                                                                                                                      |
+|            240|Duhamel, G., and Pletikosic, M. (1983) Donnees biologiques sur les Nototheniidae des iles Crozet. Cybium 3e serie 7(3):43-57. As cited in Duhamel, G. and Hureau, J.C. (1985) The role of zooplankton in the diets of certain sub-Antarctic marine fish. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp.421-429                                                                                                                                                                                    |
+|            242|Slip, D. J., Moore, G. J. and Green, K. 1995. Stomach contents of a southern bottlenose whale, Hyperoodon planifrons, stranded at Heard Island. Marine Mammal Science 11: 575-584                                                                                                                                                                                                                                                                                                                                                                                             |
+|            243|Nemoto, T., Okiyama, M., and Takahashi, M. (1985) Aspects of the roles of squid in food chains of marine Antarctic ecosystems. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp. 415-420                                                                                                                                                                                                                                                                                                             |
+|            244|Clarke, M.R. (1980) Cephalopoda in the diet of sperm whales of the Southern hemisphere and their bearing on sperm whale biology. Discovery Reports 27:1-324. As cited in Nemoto, T., Okiyama, M., and Takahashi, M. (1985) Aspects of the roles of squid in food chains of marine Antarctic ecosystems. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp. 415-420                                                                                                                                    |
+|            251|Puddicombe, R.A. and Johnstone, G.W. (1988) The breeding season diet of Adelie penguins at the Vestfold Hills, East Antarctica. Hydrobiologia 15:239253                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|            252|Kirkman, S.P., Wilson, W., Klages, N.T.W., Bester, M.N., and Isaksen, K. (2000) Diet and estimated food consumption of Antarctic fur seals at Bouvetøya during summer. Polar Biology 23:745752                                                                                                                                                                                                                                                                                                                                                                               |
+|            256|LIPINSKI, M.R. &amp; JACKSON, S. 1989. Surface-feeding on cephalopods by procellariiform seabirds in the southern Benguela region, South Africa. J. Zool., Lond., 318: 549563                                                                                                                                                                                                                                                                                                                                                                                                    |
+|            257|MOUGIN, J.-L. 1968. Etude écologique de quatre espèces de pétrels Antarctiques. LOiseau et la Revue Française dOrnithologie 38 (Numéro spécial): 152 (as cited in Hunter, S. 1985. The role of giant-petrels in the Southern Ocean ecosystem. Pp. 534-542 in Antarctic Nutrient Cycles and Food Webs. W.R. Siegfried, P.R. Condy, and R.M. Laws (eds.). Springer-Verlag, Berlin)                                                                                                                                                                                           |
+|            260|MOUGIN, J.-L. 1975. Ecologie comparée des procellariidae Antarctiques et subantarctiques. Com. Nat. Franc. Rech. Antarct. 36: 57103; Voisin, J.-F. 1968. Les petrels geants (Macronectes halli et Macronectes giganteus) de l'ile de la Possession. L'Oiseau et R.F.O. 38 (special): 95-122 (as cited in HUNTER, S. 1985. The role of giant petrels in the Southern Ocean ecosystem. In: Siegfried, W.R., Condy, P.R. &amp; Laws, R.M. (Eds). Antarctic nutrient cycles and food webs. Berlin: Springer-Verlag. pp. 534-542)                                                     |
+|            263|Prince PA (1980) The food and feeding ecology of grey-headed albatross Diomedea chrysostoma and black-browed albatross D. melanophrys. Ibis 122:476-488 (as cited in Croxall JP, Prince PA (1980) Food, feeding ecology and ecological segregation of seabirds at South Georgia. Biol J Linn Soc 14:103-131)                                                                                                                                                                                                                                                                  |
+|            264|Prince PA, Copestake PG (1990) Diet and aspects of fairy prions breeding at South Georgia. Notornis 37:5969                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|            267|Hunter S unpublished data (as cited in Croxall JP, Prince PA (1980) Food, feeding ecology and ecological segregation of seabirds at South Georgia. Biol J Linn Soc 14:103-131)                                                                                                                                                                                                                                                                                                                                                                                                |
+|            269|Tickell WLN (1964) Feeding preferences of the albatrosses Diomedea melanophris and D. chrystostoma at South Georgia. In: Carrick R, Holdgate MV, Prevost J (eds) Biologie antarctique. Hermann, Paris, p 383387 (as cited in Prince PA (1980) The food and feeding ecology of grey-headed albatross Diomedea chrysostoma and black-browed albatross D. melanophrys. Ibis 122:476-488)                                                                                                                                                                                        |
+|            270|Tickell, W. L. N. 1968. The biology of the great albatrosses, Diomedea exulans and Diomedea epomophora.  J. Ant. Res. Ser. 12: 1-55; Clarke MR, Croxall JP, Prince PA (1981) Cephalopod remains in the regurgitations of the wandering albatross Diomedea exulans L. at South Georgia. Br Antarct Surv Bull 54:9 21 (as cited in Croxall JP, Prince PA (1980) Food, feeding ecology and ecological segregation of seabirds at South Georgia. Biol J Linn Soc 14:103-131)                                                                                                      |
+|            275|RIDOUX, V. &amp; OFFREDO, C. 1989. The diets of five summer breeding seabirds in Adélie Land, Antarctica. Polar Biology 9: 137145                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|            277|Cherel, Y. and Duhamel, D. (2003) Diet of the squid Moroteuthis ingens (Teuthoidea: Onychoteuthidae) in the upper slope waters of the Kerguelen Islands. Marine Ecology Progress Series 250: 197203                                                                                                                                                                                                                                                                                                                                                                          |
+|            279|Cherel, Y., Duhamel, G., and Gasco, N. (2004) Cephalopod fauna of subantarctic islands: new information from predators.  Marine Ecology Progress Series 266: 143156                                                                                                                                                                                                                                                                                                                                                                                                          |
+|            295|Slip, D.J. (1995) The diet of southern elephant seals (Mirounga leonina) from Heard Island. Canadian Journal of Zoology 63:15191528                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|            296|Eastman, J.T. (1985) The evolution of neutrally buoyant Notothenioid fishes: their specializations and potential interactions in the Antarctic marine food web. In Sigfried, W.R., Condy, P.R., and Laws, R.M. (eds) Antarctic Nutrient Cycles and Food Webs. Springer-Verlag, Berlin. pp. 430-436                                                                                                                                                                                                                                                                            |
+|            302|CREET, S., VAN FRANEKER, J.A., VAN SPANJE, T.M. &amp; WOLFF, W.J. 1994. Diet of the Pintado Petrel Daption capense at King George Island, Antarctica, 1990/91. Mar Orn. 22: 221229                                                                                                                                                                                                                                                                                                                                                                                               |
+|            304|Croxall JP, Rickets C, Prince PA (1984) Impact of seabirds on marine resources, especially krill of South Georgia waters. In: Causey Whittow G and Rahn H (eds) Seabird energetics. Plenum Publishing Corporation, New York, pp 285 317                                                                                                                                                                                                                                                                                                                                       |
+|            305|Croxall, J.P., McCann, T.S., Prince, P.A. &amp; Rothery, P. 1988. Reproductive performance of seabirds and seals at South Georgia and Signy Islands, 1976-1987:  implications for Southern Ocean Monitoring Studies. Pp. 261-285 in Antarctic Ocean and Resources Variability. Ed. D. Sahrhag. Springer-Verlag, Berlin.                                                                                                                                                                                                                                                           |
+|            311|HUNTER, S. 1983. The food and feeding ecology of the giant petrels Macronectes halli and Macronectes giganteus at South Georgia. J. Zool., Lond. 200: 521-538                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|            326|Jackson, G. D., McKinnon, J. F., Lalas, C., Ardern, R., and Buxton, N. G. (1998) Food spectrum of the deepwater squid Moroteuthis ingens (Cephalopoda: Onychoteuthidae) in New Zealand waters. Polar Biology 20: 5665                                                                                                                                                                                                                                                                                                                                                        |
+|            329|Green, K. and Burton, H. R. (1987) Seasonal and geographic variation in the food of Weddell seals, Leptonychotes weddellii, in Antarctica. Australian Wildlife Research 14:475498                                                                                                                                                                                                                                                                                                                                                                                            |
+|            331|Green, K., Williams, R., and Green, M.G. (1998) Foraging ecology and diving behaviour of macaroni penguins Eudyptes chrysolophus at Heard Island. Marine Ornithology 26:2734                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+
+---
+background-image: url(./extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# How can I get involved?
+
+1. **Contribute data** (particularly from under-represented taxa, regions, and data types). If you have data from an unpublished paper, the data can be embargoed until publication.
+
+  - download the template and submit your data: https://github.com/SCAR/dietandenergetics
+
+      Or, if you have a lot of data in a consistent format, we may be able to script a batch import.
+
+1. **Join a group** working on a paper
+
+1. **Make suggestions** so that this is more useful to the SCAR community
+  - how you might use such data
+  - what analytical functionality you would like to see
+
+---
+
+class: bottom
+background-image: url(./extra/iceland.gif)
+background-size: auto 100%
+background-position: center center
+
+# Contact
+
+
+<a href="mailto:andrea.walters@utas.edu.au">andrea.walters@utas.edu.au</a> or <a href="mailto:ben.raymond@aad.gov.au">ben.raymond@aad.gov.au</a>
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": false
+});
+if (window.HTMLWidgets) slideshow.on('showSlide', function (slide) {setTimeout(function() {window.dispatchEvent(new Event('resize'));}, 100)});</script>
+
+  </body>
+</html>
