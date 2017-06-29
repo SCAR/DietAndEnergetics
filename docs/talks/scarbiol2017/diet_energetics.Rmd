@@ -29,7 +29,7 @@ x <- so_diet()
 xi <- so_isotopes()
 ```
 
-class: middle
+class: inverse, middle
 background-image: url(./extra/scar_logo_sm.jpg)
 background-size: auto 20%
 background-position: 98% 2%
@@ -90,7 +90,7 @@ background-position: 98% 98%
 
 # Current data holdings
 
-### Seeded from a previous Southern Ocean diet database:
+### Seeded from the previous Southern Ocean diet database:
 
 Conventional diet: `r sprintf("%d",round(nrow(x)/100)*100)` records / `r round(length(unique(c(x$predator_name,x$prey_name)))/10)*10` taxa / `r round(length(unique(x$source_id))/10)*10` studies
 
@@ -100,7 +100,7 @@ Stable isotopes: `r sprintf("%d",round(nrow(xi)/100)*100)` records / `r round(le
 
 Conventional diet: benthic and myctophid fish
 
-Stable isotopes: seabirds, urchins, orca, seals, toothfish
+Stable isotopes: seabirds, urchins, orca, seals, toothfish (including data from the EGBAMM web site by Luis H&uuml;ckst&auml;dt)
 
 DNA-based diet: albatrosses, krill
 
@@ -119,11 +119,11 @@ Papers being prepared while the database is being populated:
 
 1. Diet and energetics data in the context of ecosystem modelling and size-based models (Rowan Trebilco et al.)
 
-1. Mesopelagic prey, isoscapes, acoustics (Andrea Walters et al.)
+1. Mesopelagic prey, isoscapes, top predator foraging, acoustics (Andrea Walters et al.)
 
 1. Food web/network structures (Stacey McCormack, Jess Melbourne-Thomas et al.)
 
-1. Fatty acids (Ma&euml;lle Connan et al.)
+1. Lipid studies in the Southern Ocean: a review and a way forward (Ma&euml;lle Connan et al.)
 
 1. Albatross diet (Julie McInnes et al.)
 
@@ -207,7 +207,7 @@ background-position: 98% 98%
 
 # How can I get involved?
 
-1. **Contribute data** (particularly from under-represented taxa, regions, and data types). If you have data from an unpublished paper, the data can be embargoed until publication.
+1. **Contribute data** (particularly from under-represented taxa, regions, or data types). If you have data from an unpublished paper, the data can be embargoed until publication.
 
   - download the template and submit your data: https://github.com/SCAR/dietandenergetics
 
