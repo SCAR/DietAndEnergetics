@@ -30,7 +30,7 @@ xi <- so_isotopes()
 ```
 
 class: inverse, middle
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 20%
 background-position: 98% 2%
 
@@ -44,7 +44,7 @@ Antonio Ag&uuml;era - Ma&euml;lle Connan - Hauke Flores - Luis H&uuml;ckst&auml;
 
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -61,7 +61,7 @@ Information on diet and energy flow = fundamental to a range of studies
 
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -69,6 +69,7 @@ background-position: 98% 98%
 
 - conventional diet data (e.g. stomach, scat contents)
 
+<img src="extra/1066-C1m.jpg" style="float:right;clear:none;width:40%;" />
 - stable isotopes
 
 - DNA-based diet identification
@@ -77,6 +78,7 @@ background-position: 98% 98%
 
 - energetic content
 
+
 Perhaps:
 
 - allometric equations (length-mass relationships)
@@ -84,7 +86,7 @@ Perhaps:
 - other?
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -107,7 +109,20 @@ DNA-based diet: albatrosses, krill
 Energetic content: euphausiids, amphipods, fish, squid, jellyfish
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data release
+
+- the "seed" data (from the previous Southern Ocean diet database) are public now
+
+- access to the new data will be limited to the project working groups while the initial papers are in preparation
+
+- full public release once those papers are at a suitable stage
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -146,6 +161,8 @@ background-position: 98% 98%
 
 R package in development for accessing and manipulating these data.
 
+See https://github.com/SCAR/sohungry
+
 ### Example usage
 
 Load the package and retrieve diet data:
@@ -155,7 +172,7 @@ x <- so_diet()
 ```
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -181,7 +198,7 @@ x %>% filter_by_predator_name("Electrona carlsbergi") %>%
 ```
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -201,7 +218,7 @@ x %>% dplyr::filter(prey_worms_order=="Teuthida") %>%
 
 
 ---
-background-image: url(./extra/scar_logo_sm.jpg)
+background-image: url(extra/scar_logo_sm.jpg)
 background-size: auto 15%
 background-position: 98% 98%
 
@@ -222,7 +239,7 @@ background-position: 98% 98%
 ---
 
 class: bottom
-background-image: url(./extra/iceland.gif)
+background-image: url(extra/iceland.gif)
 background-size: auto 100%
 background-position: center center
 
@@ -232,6 +249,6 @@ aw <- paste0("andrea",".","walters","@","utas.edu.au")
 br <- paste0("ben",".","raymond","@","aad.gov.au")
 ```
 
-`r tags$a(href=paste0("mailto:",aw),aw)` or `r tags$a(href=paste0("mailto:",br),br)`
+`r htmltools::tags$a(href=paste0("mailto:",aw),aw)` or `r htmltools::tags$a(href=paste0("mailto:",br),br)`
 
 
