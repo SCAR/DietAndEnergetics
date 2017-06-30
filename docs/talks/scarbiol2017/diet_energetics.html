@@ -27,6 +27,7 @@ https://data.aad.gov.au/trophic
 
 Antonio Ag&amp;uuml;era - Ma&amp;euml;lle Connan - Hauke Flores - Luis H&amp;uuml;ckst&amp;auml;dt - Mary-Anne Lea - Julie McInnes - Ben Raymond - Fokje Schaafsma - Gabriele Stowasser - Rowan Trebilco - Anton van de Putte - &lt;u&gt;Andrea Walters&lt;/u&gt; - Jos&amp;eacute; Xavier
 
+&lt;img style="float:right;clear:none;" width="20%" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZUAAAGVAQMAAAAMlf54AAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAACt0lEQVR4nO2bO5LjMAxE4ZpAoY6go+ho46PNUXQEhw5cxhKfpmTLWxPsBmBVd2DLMp4SgsSHlAhFURRFUf9Fs4a2dvEUvbZbU7sQWTeZHtLurGlxJTMKc/evdfML++82pcWswWxuQWYg5sssGqOPizZYb/LVHEJ/ltvU7sRfcBEyQzESww/4+2dR8wN3ETJjMnO3sDuNaT/MIX7xHTIVGQnT9mHDr5vH4GbR/ADB2ERmHKbnVXeM+vvFOa8iU5o5yEOvWgxW7bnyLyJTkGlz+6JHmaklWJj2beHONZ3MIEykU5YZvz6lrdcohBa1O0dHIFOayczYpjQcIoYfk9yiciRYZIZhNDJjTHIUtxKekd0oPcVtMpWZSIixOi/hEJjSH3tPZGozMfweaJ/OqF+gIuqNxYPIVGeOvafoJ3rENSaT5qiRrmRGYWx1Nj/o7QnUP4A9wTrHbTJlmT78imAs8IN43DV3Ao4iU5pB/zeW6XQIReh1F1nIjMW4VLPI6cPvCZbvz3mrUV7yKjK1GVQ7mOSeIkss3BM26siMx3hz/7WmjaRZU2+5MpnSjKdTWcqaVrOIQxLO+HPvp7hNpjAT9ereNFwx6siVY+F+n9tkCjMie58CSfNucUEa/SQzDgPTLbdwcvgPFuc7ZGozsV4LCqE9aZaeaaGPTGYUBkeXske8b9R1z8AFmVEYj699Hx1wWMRTtvezhmSqMzGlI9CK7NtyGXpN5/MuZCozUD9ZeMNRYEGKPKMQIjMEc3hv6oF3bB7ZGo4tnPVDP5FMacaPRERrWF7Pj87a/YDMWEx/H0PRI46ZHJuvsV5/qJnIDMD4YFv942XPd87tbEspmQEZ6c2IXKZj4U6bc++JTGHGv4zBMRe8Ur6f/PYJTmYYJpfkrb900c/uHzdf/5KLkanIUBRFURT1T/oDh3UANxi2CNgAAAAASUVORK5CYII=" alt="image" /&gt;
 
 ---
 background-image: url(extra/scar_logo_sm.jpg)
@@ -198,7 +199,7 @@ Which studies have looked at the predators of squid?
 
 ```r
 x %&gt;% dplyr::filter(prey_worms_order=="Teuthida") %&gt;%
-  select(source_id,source_details) %&gt;% distinct
+  dplyr::select(source_id,source_details) %&gt;% distinct
 ```
 
 | Source&amp;nbsp;ID|Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
