@@ -131,20 +131,21 @@ background-position: 98% 98%
 
 Papers being prepared while the database is being populated:
 
-1. Energetics review (Fokje Schaafsma et al.)
+1. Energetics review <span style="font-size:smaller;">(contact: Fokje Schaafsma)</span>
 
-1. Diet and energetics data in the context of ecosystem modelling and size-based models (Rowan Trebilco et al.)
+1. Diet and energetics data in the context of ecosystem modelling and size-based models <span style="font-size:smaller;">(contact: Rowan Trebilco)</span>
 
-1. Mesopelagic prey, isoscapes, top predator foraging, acoustics (Andrea Walters et al.)
+1. Mesopelagic prey, isoscapes, top predator foraging, acoustics <span style="font-size:smaller;">(contact: Andrea Walters)</span>
 
-1. Food web/network structures (Stacey McCormack, Jess Melbourne-Thomas et al.)
+1. Food web/network structures <span style="font-size:smaller;">(contact: Stacey McCormack/Jess Melbourne-Thomas/Rowan Trebilco)</span>
 
-1. Lipid studies in the Southern Ocean: a review and a way forward (Ma&euml;lle Connan et al.)
+1. Lipid studies in the Southern Ocean: a review and a way forward <span style="font-size:smaller;">(contact: Ma&euml;lle Connan)</span>
 
-1. Albatross diet (Julie McInnes et al.)
+1. Albatross diet <span style="font-size:smaller;">(contact: Julie McInnes)</span>
 
 
 Please make contact if you would like to contribute or see scope for other papers!
+
 
 ---
 background-image: url(extra/AtlanticFWSilhouettes_sm.png)
