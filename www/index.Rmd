@@ -100,13 +100,13 @@ Access is currently via the R packages [sohungry](https://github.com/SCAR/sohung
 The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
 
 <div style="padding-left: 2em;">
-Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, doi:xxx
+Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, (DOI to be issued)
 </div>
 
 If you have used data from many individual sources, the overall citation for this database is:
 
 <div style="padding-left: 2em;">
-Scientific Committee on Antarctic Research (2018) Southern Ocean Data and Energetics Database. doi:xxx
+Scientific Committee on Antarctic Research (2018) Southern Ocean Data and Energetics Database. (DOI to be issued)
 </div>
 
 However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).

@@ -1,10 +1,12 @@
 name: "Southern Ocean Diet and Energetics Database"
 output_dir: _site
+exclude: ["*~"]
 output:
   html_document:
     theme: lumen
     highlight: textmate
     include:
       before_body: header.html
+      after_body: footer.html
     css: css/soded.css
     
