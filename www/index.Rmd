@@ -1,0 +1,158 @@
+---
+title: ""
+---
+
+<link rel="stylesheet" href="css\soded.css" type="text/css" />
+
+
+```{r setup,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+library(sohungry)
+library(solong)
+library(shiny)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(lubridate)
+
+options(knitr.table.format="html", knitr.kable.NA="")
+```
+
+```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=TRUE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+cache_dir <- tempdir()
+xd <- so_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
+xi <- so_isotopes(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xi <- xi %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
+xe <- so_energetics(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xe <- xe %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
+xl <- so_lipids(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
+xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
+  xi %>% dplyr::select(source_id, source_details, source_doi),
+  xl %>% dplyr::select(source_id, source_details, source_doi),
+  xe %>% dplyr::select(source_id, source_details, source_doi)) %>%
+  distinct %>% dplyr::arrange(source_id) %>%
+  mutate(source_details=iconv(source_details, to="ASCII//TRANSLIT")) %>%
+  dplyr::rename("Source ID"=source_id, Details=source_details, DOI=source_doi) %>%
+  dplyr::mutate(DOI=case_when(grepl("^10\\.", DOI)~paste0("https://doi.org/", DOI),
+    is.na(DOI)~"",
+    TRUE~DOI))
+
+all_stats <- bind_rows(xd %>% dplyr::summarize("Data type"="Dietary sample data (gut content, etc)", "Number of records"=n(), "Number of taxa"=n_distinct(c(predator_name,prey_name)), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
+  xi %>% dplyr::summarize("Data type"="Stable isotopes", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
+  xl %>% dplyr::summarize("Data type"="Lipids", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
+  xe %>% dplyr::summarize("Data type"="Energetics", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
+  sol_equations() %>% dplyr::summarize("Data type"="Allometric equations", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(reference))##, "Last updated"=max(last_modified)
+)
+```
+
+# Southern Ocean Data and Energetics Database {.tabset}
+
+Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on [Antarctic Biodiversity Informatics (EG-ABI)](http://www.scar.org/ssg/life-sciences/eg-abi) and [Birds and Marine Mammals (EG-BAMM)](http://www.scar.org/ssg/life-sciences/bamm) are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
+
+<div style="height: 20px;"></div>
+
+## Overview
+
+`r kable(all_stats, format="html", caption="<h3>Current status</h3>") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+
+
+<div style="margin-left: auto; margin-right: auto; margin-top: 50px; width: 80%;">
+```{r leaf,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=TRUE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+library(leaflet)
+
+tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+## formatted popup HTML
+popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
+
+tempi <- xi %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_i <- sprintf("<p><strong>Isotope study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempi$source_id, tempi$taxon_name, tempi$N)
+
+tempe <- xe %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_e <- sprintf("<p><strong>Energetics study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempe$source_id, tempe$taxon_name, tempe$N)
+
+templ <- xl %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",templ$source_id, templ$taxon_name, templ$N)
+
+m <- leaflet(width="100%") %>%
+  addProviderTiles("Esri.WorldImagery") %>%
+  addMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", clusterOptions=markerClusterOptions(), popup=popup_d) %>% ##, label=tempd$place_name
+  addMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
+  addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
+  addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
+m	
+```
+</div>
+
+
+## Data access
+
+Access is currently via the R packages [sohungry](https://github.com/SCAR/sohungry) (for data) and [solong](https://github.com/SCAR/solong) (for allometric equations). Other distribution mechanisms will be added in due course.
+
+
+### Citing
+
+<img style="float:right;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/CC-BY_icon.svg/200px-CC-BY_icon.svg.png" />
+The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
+
+<div style="padding-left: 2em;">
+Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, doi:xxx
+</div>
+
+If you have used data from many individual sources, the overall citation for this database is:
+
+<div style="padding-left: 2em;">
+Scientific Committee on Antarctic Research (2018) Southern Ocean Data and Energetics Database. doi:xxx
+</div>
+
+However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
+
+### Software tools
+
+As well as providing data access, the R packages mentioned above also provide functionality for working with these data. See the package home pages for more information: https://github.com/SCAR/sohungry and https://github.com/SCAR/solong.
+
+
+## People
+
+Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to [make contact](http://www.scar.org/eg-abi/abi-contact).
+
+### Core project working group
+
+- Antonio Ag&uuml;era (Universit&eacute; libre de Bruxelles, Belgium)
+- Claudia Andrade (Instituto de la Patagonia, Universidad de Magallanes)
+- Ma&euml;lle Connan (Nelson Mandela Metropolitan University, South Africa)
+- Hauke Flores (Alfred Wegener Institute, Germany)
+- Luis H&uuml;ckst&auml;dt (University of California Santa Cruz, USA)
+- Mary-Anne Lea (Institute for Marine and Antarctic Studies, Australia)
+- Julie McInnes (Institute for Marine and Antarctic Studies, Australia)
+- Ben Raymond (Australian Antarctic Division, Australia)
+- Fokje Schaafsma (Institute for Marine Resources & Ecosystem Studies, Netherlands)
+- Gabriele Stowasser (British Antarctic Survey, United Kingdom)
+- Rowan Trebilco (Institute for Marine and Antarctic Studies, Australia)
+- Anton van de Putte (Royal Belgian Institute of Natural Sciences, Belgium)
+- Andrea Walters (Institute for Marine and Antarctic Studies, Australia)
+- Jos&eacute; Xavier (University of Coimbra, Portugal, and British Antarctic Survey, United Kingdom)
+
+### Data contributors
+
+- Claudia Andrade, Thomas Brey, and collaborators (subantarctic South American isotope and diet data)
+- Australian Antarctic Data Centre (the [Southern Ocean dietary database](http://data.aad.gov.au/aadc/trophic/) was used to seed this new, larger database effort)
+- Alison Cleary and collaborators (krill gut DNA data)
+- Nicole Hellessey (krill fatty acid/lipid data)
+- Julie McInnes (albatross diet and stable isotope data)
+- Lo&iuml;c Michel (urchin stable isotope data)
+- Ryan Reisinger (Marion Island stable isotope data)
+- Fokje Schaafsma, Anton Van de Putte, and collaborators (energetics data)
+- Arnaud Tarroux Kit Kovacs, and collaborators (seabird stable isotope data)
+- Megan Tierney (Macquarie Island fish energetics data)
+- Anton van de Putte, Filip Volckaert (energetics data)
+
+
+## References
+
+`r kable(xs, format="html") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+

@@ -1,0 +1,35 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+/*a {
+  color: #00B7FF;
+}
+
+#aad_foot_logo img {
+	float: left;
+	margin: 0 128px 12px 12px;
+}
+
+#site_footer {
+	font-size: 0.9em;
+	padding-bottom: 2em;
+}
+
+ul.breadcrumb{background:none;background-color:transparent;border:none}
+
+ul.breadcrumb li{list-style-type:none;margin-left:0}
+
+ul.breadcrumb li a,ul.breadcrumb li span{text-transform:none;font-size:1em}
+*/
+
+.main-container { max-width: 80%; }
+
+.header_img { float:right; padding: 20px;}
+
+h1 { margin-bottom: 30px; }
+
+.tab-content { padding-top: 15px; }
+
+table { border: 1px solid #ccc; padding: 30px; }
