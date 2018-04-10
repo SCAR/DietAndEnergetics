@@ -1,0 +1,439 @@
+---
+title: "SCAR Southern Ocean Diet and Energetics Database"
+author: "Non-exhaustively: Antonio Ag\u00fcera, Rachael Alderman, Julia Blanchard, Madeleine Brasier, Thomas Brey, Alison Cleary, Yves Cherel, Ma\u00eblle Connan, Bruce Deagle, Hauke Flores, Miguel Guerreiro, Nicole Hellessey, Mark Hindell, Luis H\u00fcckst\u00e4dt, Simon Jarman, Kit Kovacs, Mary-Anne Lea, Silvia Louren\u00e7o, Stacey McCormack, Julie McInnes, Jess Melbourne-Thomas, Lo\u00efc Michel, Ben Raymond, Ryan Reisinger, Andy Revill, Fokje Schaafsma, Jonny Stark, Gabriele Stowasser, Arnaud Tarroux, Megan Tierney, Rowan Trebilco, Anton van de Putte, Jan van Franeker, Filip Volckaert, Andrea Walters, Jos\u00e9 Xavier"
+date: "<div id='logo_footer'><img src='extra/scar_logo_sm.jpg' /></div>"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    seal: false
+    self_contained: false
+    css: ["extra/extra.css"]
+    chakra: libs/remark-latest.min.js
+    nature:
+      highlightStyle: github
+      highlightLines: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+options(knitr.kable.NA="")
+knitr::opts_chunk$set(fig.path="extra/",echo=FALSE,warning=FALSE,message=FALSE,cache=TRUE)
+```
+```{r include=FALSE}
+library(lubridate)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(xtable)
+library(htmltools)
+library(sohungry)
+library(solong)
+
+cache_dir <- tempdir()
+xd <- so_diet(cache_directory=cache_dir)
+xi <- so_isotopes(cache_directory=cache_dir)
+xl <- so_lipids(cache_directory=cache_dir)
+##xdna <- so_dna_diet(cache_directory=cache_dir)
+xdna <- tibble(predator_name="BBAL", prey_name=1:12, source_id=1)
+xe <- so_energetics(cache_directory=cache_dir)
+xq <- sol_equations()
+
+xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xi <- xi %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xe <- xe %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
+round_nicely <- function(x, order=10) if (x<=15) x else sprintf("%d", round(x/order)*order)
+
+```
+
+class: inverse, middle
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 20%
+background-position: 98% 2%
+
+# SCAR Southern Ocean Diet and <br /> Energetics Database
+
+https://data.aad.gov.au/trophic
+
+#### Non-exhaustively:
+
+<img style="background-color: white; padding:10px; float:right;clear:none; margin:20px;" width="20%" src="extra/measoqr.png" alt="qrcode" />
+
+Antonio Ag&uuml;era - Rachael Alderman - Claudia Andrade - Julia Blanchard - Madeleine Brasier - Thomas Brey - Alison Cleary - Yves Cherel - Ma&euml;lle Connan - Bruce Deagle - Hauke Flores - Miguel Guerreiro - Nicole Hellessey - Mark Hindell - Luis H&uuml;ckst&auml;dt - Simon Jarman - Kit Kovacs - Mary-Anne Lea - Silvia Louren&ccedil;o - Stacey McCormack - Julie McInnes - Jess Melbourne-Thomas - Lo&iuml;c Michel - <u>Ben Raymond</u> - Ryan Reisinger - Andy Revill - Fokje Schaafsma - Jonny Stark - Gabriele Stowasser - Arnaud Tarroux - Megan Tierney - Rowan Trebilco - Anton Van de Putte - Jan van Franeker - Filip Volckaert - Andrea Walters - Jos&eacute; Xavier
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# General aims
+
+Information on diet and energy flow = fundamental to a range of studies
+
+### This project
+- data and tools to work with them
+
+- a product of the SCAR community and open for all to participate in and use
+
+<img width="40%" src="extra/Black-browed-Albatross-JCleeland.jpg" />
+
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data types
+
+- conventional diet data (e.g. stomach, scat contents)
+
+<img src="extra/1066-C1m.jpg" style="float:right;clear:none;width:40%;" />
+- stable isotopes
+
+- DNA-based diet identification
+
+- lipids, fatty acids
+
+- energetic content
+
+- allometric equations (e.g. length-mass relationships)
+
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Current (public) data
+
+<div style="background-color: #f8f8f8; border: 1px solid black; border-radius: 8px; padding: 12px; display: block;">
+<p>Conventional diet: `r round_nicely(nrow(xd), 100)` records / `r round_nicely(length(unique(unique(c(xd$predator_name,xd$prey_name)))))` taxa / `r round_nicely(length(unique(xd$source_id)))` studies</p>
+
+<p>DNA diet: `r round_nicely(nrow(xdna), 100)` records / `r round_nicely(length(unique(unique(c(xdna$predator_name,xdna$prey_name)))))` taxa / `r round_nicely(length(unique(xdna$source_id)))` studies</p>
+
+<p>Stable isotopes: `r round_nicely(nrow(xi), 100)` records / `r round_nicely(length(unique(xi$taxon_name)))` taxa / `r round_nicely(length(unique(xi$source_id)))` studies</p>
+
+<p>Energetics: `r round_nicely(nrow(xe), 100)` records / `r round_nicely(length(unique(xe$taxon_name)))` taxa / `r round_nicely(length(unique(xe$source_id)))` studies</p>
+
+<p>Lipids: `r round_nicely(nrow(xl), 10)` records / `r round_nicely(length(unique(xl$taxon_name)))` taxa / `r round_nicely(length(unique(xl$source_id)))` studies</p>
+
+<p>Allometric equations: `r round_nicely(nrow(xq), 10)` equations / `r round_nicely(length(unique(xq$taxon_name)))` taxa / `r round_nicely(length(unique(c(xq$return_property, sapply(xq$inputs, function(z)z$property)))))` properties</p>
+</div>
+
+... plus unreleased data pending publication.
+
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+
+<div style="margin-top: 50px; width: 100%;">
+```{r leaf,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=TRUE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+library(leaflet)
+
+tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+## formatted popup HTML
+popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
+
+tempi <- xi %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_i <- sprintf("<p><strong>Isotope study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempi$source_id, tempi$taxon_name, tempi$N)
+
+tempe <- xe %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_e <- sprintf("<p><strong>Energetics study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempe$source_id, tempe$taxon_name, tempe$N)
+
+templ <- xl %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",templ$source_id, templ$taxon_name, templ$N)
+
+
+
+##startZoom <- 1
+##
+##crsAntartica <-  leafletCRS(
+##  crsClass = 'L.Proj.CRS',
+##  code = 'EPSG:3031',
+##  proj4def = '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
+##  resolutions = c(8192, 4096, 2048, 1024, 512, 256),
+##  origin = c(-4194304, 4194304),
+##  bounds =  list( c(-4194304, -4194304), c(4194304, 4194304) )
+##)
+##
+##mps <- leaflet(options = leafletOptions(crs = crsAntartica, minZoom = 0, worldCopyJump = FALSE)) %>%
+##    setView(0, -90, startZoom) %>%
+##    addCircleMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", popup=popup_d, 
+##                     fillOpacity=0.5, radius=8, stroke=FALSE, color="#000") %>%
+##    addWMSTiles(baseUrl="https://maps.environments.aq/mapcache/antarc/?",
+##                layers="antarc_ramp_bath_shade_mask",
+##                options=WMSTileOptions(format="image/png", transparent=TRUE),
+##                attribution="Background imagery courtesy <a href='http://www.environments.aq/'>environments.aq</a>") %>%
+##    addGraticule()
+##mps
+
+m <- leaflet(width="100%") %>%
+  addProviderTiles("Esri.WorldImagery") %>%
+  ##addMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", clusterOptions=markerClusterOptions(), popup=popup_d) %>%
+  ##addMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
+  ##addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
+  ##addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
+  addCircleMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", fillOpacity=0.5, radius=8, stroke=FALSE, color="#C00", popup=popup_d) %>%
+  addCircleMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", fillOpacity=0.5, radius=8, stroke=FALSE, color="#0C0", popup=popup_i) %>%
+  addCircleMarkers(lng=templ$lon, lat=templ$lat, group="lipids", fillOpacity=0.5, radius=8, stroke=FALSE, color="#00C", popup=popup_l) %>%
+  addCircleMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", fillOpacity=0.5, radius=8, stroke=FALSE, color="#777", popup=popup_e)
+m	
+```
+</div>
+
+
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data flow
+
+<style> .DiagrammeR g .label {font-size: 20px; }</style>
+
+```{r data_flow,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=TRUE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+library(DiagrammeR)
+mermaid("
+graph TD
+D[<b>Data</b><br />Original data files or in published papers] --> M(Manual reformatting)
+D --> Script(Script)
+M --> T[<b>Template</b><br />https://github.com/SCAR/DietAndEnergetics]
+Script --> T
+T --> V(<b>Validation</b><br />taxonomy/vocabularies)
+V --> DB(MSSQL database, AADC)
+DB --> R[R package]
+DB --> DL[direct download*]
+DB --> SOOS[SOOSmap*]
+DB --> ACAP[ACAP portal*]
+style V fill:#29f,stroke:#333;
+style Script fill:#29f,stroke:#333;
+style M fill:#29f,stroke:#333;
+", height=500)
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Papers
+
+Papers with some link to the database:
+
+1. Energetics review <span style="font-size:smaller;">(contact: Fokje Schaafsma - submitted)</span>
+
+1. Diet and energetics data in the context of ecosystem modelling and size-based models <span style="font-size:smaller;">(contact: Rowan Trebilco)</span>
+
+1. Mesopelagic prey, isoscapes, top predator foraging, acoustics <span style="font-size:smaller;">(contact: Andrea Walters)</span>
+
+1. Food web/network structures <span style="font-size:smaller;">(contact: Stacey McCormack/Jess Melbourne-Thomas/Rowan Trebilco)</span>
+
+1. Lipid studies in the Southern Ocean: a review and a way forward <span style="font-size:smaller;">(contact: Ma&euml;lle Connan)</span>
+
+1. Albatross diet <span style="font-size:smaller;">(contact: Julie McInnes)</span>
+
+
+Please make contact if you would like to contribute or see scope for other papers!
+
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Software tools
+
+R packages in development for accessing and manipulating these data.
+
+See https://github.com/SCAR/sohungry for data and https://github.com/SCAR/solong for equations.
+
+### Example usage
+
+Load the package and retrieve diet data:
+```{r eval=FALSE, echo=TRUE}
+library(sohungry)
+xd <- so_diet()
+nrow(xd)
+```
+
+```{r echo=FALSE, cache=TRUE}
+nrow(xd)
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data format
+
+Generally, information on:
+
+- date and location of record
+
+- method details
+
+- predator characteristics (taxonomy, size, mass)
+
+- prey characteristics
+
+- measures of diet importance
+
+And similar structures for other data types.
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
+A summary of what *Electrona carlsbergi* eats:
+```{r eval=FALSE, echo=TRUE}
+xd %>% filter_by_predator_name("Electrona carlsbergi") %>%
+  diet_summary(summary_type="prey")
+```
+
+```{r echo=FALSE, cache=TRUE}
+xd %>% filter_by_predator_name("Electrona carlsbergi") %>%
+  diet_summary(summary_type="prey") %>%
+  dplyr::select(-starts_with("N_")) %>%
+  ##xtable %>% print(type="html",row.names=FALSE)
+  dplyr::mutate_all(funs(replace(.,is.nan(.),NA))) %>%
+  rename(Prey=prey,
+    "Fraction diet by weight"=fraction_diet_by_weight,
+    "Fraction occurrence"=fraction_occurrence,
+    "Fraction diet by prey items"=fraction_diet_by_prey_items) %>%
+  kable(format="markdown",digits=2)
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
+Which studies have looked at the predators of squid?
+```{r eval=FALSE, echo=TRUE}
+xd %>% filter(prey_worms_order=="Teuthida") %>%
+  select(source_id,source_details) %>% distinct
+```
+```{r echo=FALSE, cache=TRUE}
+xd %>% dplyr::filter(prey_worms_order=="Teuthida") %>%
+  dplyr::select(source_id,source_details) %>% distinct %>%
+  dplyr::rename("Source&nbsp;ID"=source_id,Details=source_details) %>%
+  kable(format="markdown")
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
+Variations in size of *Euphausia superba* as prey:
+```{r eval=FALSE, echo=TRUE}
+ggplot(xd %>% filter(prey_name=="Euphausia superba") %>%
+  select(prey_size_mean, lon, predator_name), ...)
+```
+```{r echo=FALSE, cache=TRUE, fig.height=4}
+temp <- xd %>% dplyr::filter(prey_name=="Euphausia superba") %>%
+dplyr::select(prey_size_mean, prey_sample_count, lon, predator_name) %>%
+dplyr::filter(!is.na(prey_size_mean) & !is.na(prey_sample_count))
+ggplot(temp, aes(lon, prey_size_mean, color=predator_name))+geom_point()+
+theme_bw()+labs(x="Longitude", y="Length (mm)")
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
+Variations in size of squid beaks with predator size:
+```{r eval=FALSE, echo=TRUE}
+ggplot(xd %>% filter(prey_size_notes=="lower rostral length") %>%
+  select(prey_size_mean, predator_size_mean), ...)
+```
+```{r echo=FALSE, cache=TRUE, fig.height=4}
+temp <- xd %>% dplyr::filter(prey_size_notes=="lower rostral length") %>%
+dplyr::select(prey_size_mean, predator_size_mean, predator_size_units) %>%
+dplyr::filter(!is.na(prey_size_mean) & !is.na(predator_size_mean))
+ggplot(temp, aes(predator_size_mean, prey_size_mean))+geom_point()+
+theme_bw()+labs(x="Predator size (m)", y="Lower rostral length (mm)")
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
+Evidence for age-dependent energetic content of *Electrona antarctica*?
+
+```{r echo=FALSE, cache=TRUE, fig.height=4}
+edx <- xe %>% filter(taxon_sample_count==1 & taxon_name=="Electrona antarctica")
+
+## discard the dry-weight energy density values
+edx <- edx %>% filter(measurement_units!="kJ/gDW")
+
+## some data manipulation
+edx <- edx %>%
+  ## remove the spaces from the measurement names, for convenience
+  mutate(measurement_name=gsub("[[:space:]]+", "_", measurement_name)) %>%
+  ## convert to wide format
+  dplyr::select(source_id, taxon_sample_id, measurement_name, measurement_mean_value) %>%
+  tidyr::spread(measurement_name, measurement_mean_value)
+
+ggplot(edx, aes(standard_length, energy_content))+geom_point()+theme_bw()+
+  geom_smooth()+labs(x="Standard length (mm)", y="Energy density (kJ/g wet weight)")
+```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# How can I get involved?
+
+1. **Contribute data** (particularly from under-represented taxa, regions, or data types). If you have data from an unpublished paper, the data can be embargoed until publication.
+
+  - download the template and submit your data: https://github.com/SCAR/DietAndEnergetics
+
+      Or, if you have a lot of data in a consistent format, we may be able to script a batch import.
+
+1. **Join a group** working on a paper
+
+1. **Use the database and R packages**
+
+1. **Contribute analytical code**
+
+1. **Make suggestions** so that this is more useful to the SCAR community
+  - how you might use such data
+  - what analytical functionality you would like to see
+
+---
+
+class: bottom
+background-image: url(extra/iceland.gif)
+background-size: auto 100%
+background-position: center center
+
+# Contact
+```{r echo=FALSE}
+aw <- paste0("andrea",".","walters","@","utas.edu.au")
+br <- paste0("ben",".","raymond","@","aad.gov.au")
+```
+
+`r htmltools::tags$a(href=paste0("mailto:",br),br)`
+
+
