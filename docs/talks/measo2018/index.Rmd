@@ -33,12 +33,12 @@ cache_dir <- tempdir()
 xd <- so_diet(cache_directory=cache_dir)
 xi <- so_isotopes(cache_directory=cache_dir)
 xl <- so_lipids(cache_directory=cache_dir)
-##xdna <- so_dna_diet(cache_directory=cache_dir)
-xdna <- tibble(predator_name="BBAL", prey_name=1:12, source_id=1)
+xdna <- so_dna_diet(cache_directory=cache_dir)
 xe <- so_energetics(cache_directory=cache_dir)
 xq <- sol_equations()
 
 xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xdna <- xdna %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 xi <- xi %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 xe <- xe %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
@@ -74,7 +74,7 @@ Information on diet and energy flow = fundamental to a range of studies
 ### This project
 - data and tools to work with them
 
-- a product of the SCAR community and open for all to participate in and use
+- a product of the community and open for all to participate in and use
 
 <img width="40%" src="extra/Black-browed-Albatross-JCleeland.jpg" />
 
@@ -138,6 +138,9 @@ tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %
 ## formatted popup HTML
 popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
 
+tempdna <- xdna %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+popup_dna <- sprintf("<p><strong>DNA diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempdna$source_id, tempdna$predator_name, tempdna$N)
+
 tempi <- xi %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
 popup_i <- sprintf("<p><strong>Isotope study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempi$source_id, tempi$taxon_name, tempi$N)
 
@@ -178,6 +181,7 @@ m <- leaflet(width="100%") %>%
   ##addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
   ##addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
   addCircleMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", fillOpacity=0.5, radius=8, stroke=FALSE, color="#C00", popup=popup_d) %>%
+  addCircleMarkers(lng=tempdna$lon, lat=tempdna$lat, group="dna_diet", fillOpacity=0.5, radius=8, stroke=FALSE, color="#C0C", popup=popup_dna) %>%
   addCircleMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", fillOpacity=0.5, radius=8, stroke=FALSE, color="#0C0", popup=popup_i) %>%
   addCircleMarkers(lng=templ$lon, lat=templ$lat, group="lipids", fillOpacity=0.5, radius=8, stroke=FALSE, color="#00C", popup=popup_l) %>%
   addCircleMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", fillOpacity=0.5, radius=8, stroke=FALSE, color="#777", popup=popup_e)
@@ -204,7 +208,7 @@ D[<b>Data</b><br />Original data files or in published papers] --> M(Manual refo
 D --> Script(Script)
 M --> T[<b>Template</b><br />https://github.com/SCAR/DietAndEnergetics]
 Script --> T
-T --> V(<b>Validation</b><br />taxonomy/vocabularies)
+T --> V(<b>Validation</b><br />WoRMS taxonomy/vocabularies)
 V --> DB(MSSQL database, AADC)
 DB --> R[R package]
 DB --> DL[direct download*]
@@ -415,11 +419,11 @@ background-position: 98% 98%
 
 1. **Use the database and R packages**
 
-1. **Contribute analytical code**
+1. **Contribute analytical code** (package or code snippets)
 
-1. **Make suggestions** so that this is more useful to the SCAR community
+1. **Make suggestions** so that this is more useful to the community
   - how you might use such data
-  - what analytical functionality you would like to see
+  - what analytical functionality is needed
 
 ---
 
