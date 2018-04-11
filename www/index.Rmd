@@ -22,6 +22,9 @@ cache_dir <- tempdir()
 xd <- so_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
 xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 
+xdna <- so_dna_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xdna <- xdna %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+
 xi <- so_isotopes(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
 xi <- xi %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 
@@ -32,6 +35,7 @@ xl <- so_lipids(cache_directory=cache_dir) %>% dplyr::select(source_id, east, we
 xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
 
 xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
+  xdna %>% dplyr::select(source_id, source_details, source_doi),
   xi %>% dplyr::select(source_id, source_details, source_doi),
   xl %>% dplyr::select(source_id, source_details, source_doi),
   xe %>% dplyr::select(source_id, source_details, source_doi)) %>%
@@ -43,6 +47,7 @@ xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
     TRUE~DOI))
 
 all_stats <- bind_rows(xd %>% dplyr::summarize("Data type"="Dietary sample data (gut content, etc)", "Number of records"=n(), "Number of taxa"=n_distinct(c(predator_name,prey_name)), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
+  xdna %>% dplyr::summarize("Data type"="DNA diet data", "Number of records"=n(), "Number of taxa"=n_distinct(c(predator_name,prey_name)), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
   xi %>% dplyr::summarize("Data type"="Stable isotopes", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
   xl %>% dplyr::summarize("Data type"="Lipids", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
   xe %>% dplyr::summarize("Data type"="Energetics", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
@@ -69,6 +74,9 @@ tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %
 ## formatted popup HTML
 popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
 
+tempdna <- xdna %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+popup_dna <- sprintf("<p><strong>DNA diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempdna$source_id, tempdna$predator_name, tempdna$N)
+
 tempi <- xi %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
 popup_i <- sprintf("<p><strong>Isotope study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempi$source_id, tempi$taxon_name, tempi$N)
 
@@ -81,6 +89,7 @@ popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</st
 m <- leaflet(width="100%") %>%
   addProviderTiles("Esri.WorldImagery") %>%
   addMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", clusterOptions=markerClusterOptions(), popup=popup_d) %>% ##, label=tempd$place_name
+  addMarkers(lng=tempdna$lon, lat=tempdna$lat, group="dna_diet", clusterOptions=markerClusterOptions(), popup=popup_dna) %>%
   addMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
   addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
   addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
@@ -147,7 +156,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Lo&iuml;c Michel (urchin stable isotope data)
 - Ryan Reisinger (Marion Island stable isotope data)
 - Fokje Schaafsma, Anton Van de Putte, and collaborators (energetics data)
-- Arnaud Tarroux Kit Kovacs, and collaborators (seabird stable isotope data)
+- Arnaud Tarroux, Kit Kovacs, and collaborators (seabird stable isotope data)
 - Megan Tierney (Macquarie Island fish energetics data)
 - Anton van de Putte, Filip Volckaert (energetics data)
 
