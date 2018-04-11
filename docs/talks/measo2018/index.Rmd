@@ -45,6 +45,8 @@ xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+wes
 
 round_nicely <- function(x, order=10) if (x<=15) x else sprintf("%d", round(x/order)*order)
 
+aw <- paste0("andrea",".","walters","@","utas.edu.au")
+br <- paste0("ben",".","raymond","@","aad.gov.au")
 ```
 
 class: inverse, middle
@@ -89,9 +91,9 @@ background-position: 98% 98%
 - conventional diet data (e.g. stomach, scat contents)
 
 <img src="extra/1066-C1m.jpg" style="float:right;clear:none;width:40%;" />
-- stable isotopes
-
 - DNA-based diet identification
+
+- stable isotopes
 
 - lipids, fatty acids
 
@@ -198,7 +200,7 @@ background-position: 98% 98%
 
 # Data flow
 
-<style> .DiagrammeR g .label {font-size: 20px; }</style>
+<style> .DiagrammeR g .label {font-size: 32px; }</style>
 
 ```{r data_flow,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=TRUE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
 library(DiagrammeR)
@@ -214,11 +216,38 @@ DB --> R[R package]
 DB --> DL[direct download*]
 DB --> SOOS[SOOSmap*]
 DB --> ACAP[ACAP portal*]
+DB --> Other[???]
 style V fill:#29f,stroke:#333;
 style Script fill:#29f,stroke:#333;
 style M fill:#29f,stroke:#333;
-", height=500)
+", height=500, width=700)
 ```
+
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Data citation
+
+<div style="background-color: #f8f8f8; border: 1px solid black; border-radius: 8px; padding: 12px; display: block; font-size:smaller;">
+<img style="float:right;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/CC-BY_icon.svg/200px-CC-BY_icon.svg.png" />
+The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources, please cite the original data sources and additionally acknowledge this database. For example:
+
+
+<div style="padding-left: 2em;">
+<br />
+Smith J (2008) On the use of stable isotopes. <em>Journal of Stable Isotope Stuff</em> <strong>123</strong>:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database
+</div>
+
+If you have used data from many individual sources, the overall citation for this database is:
+
+<div style="padding-left: 2em;">
+Scientific Committee on Antarctic Research (2018) Southern Ocean Data and Energetics Database.
+</div>
+
+However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
+</div>
 
 ---
 background-image: url(extra/scar_logo_sm.jpg)
@@ -282,11 +311,9 @@ Generally, information on:
 
 - method details
 
-- predator characteristics (taxonomy, size, mass)
+- predator and prey characteristics (taxonomy, sex, size, mass)
 
-- prey characteristics
-
-- measures of diet importance
+- measures of diet importance.
 
 And similar structures for other data types.
 
@@ -342,6 +369,27 @@ background-position: 98% 98%
 
 # Assessments
 
+Record counts over time:
+
+```{r echo=FALSE, cache=TRUE, fig.height=3.5}
+xdt <- bind_rows(xi %>% dplyr::select(observation_date_start) %>% mutate(type="Isotopes"),
+xd %>% dplyr::select(observation_date_start) %>% mutate(type="Conventional diet"),
+xdna %>% dplyr::select(observation_date_start) %>% mutate(type="DNA diet"),
+xe %>% dplyr::select(observation_date_start) %>% mutate(type="Energetics"),
+xl %>% dplyr::select(observation_date_start) %>% mutate(type="Lipids")) %>%
+dplyr::filter(observation_date_start > as.Date("1900-01-01"))
+
+ggplot(xdt, aes(observation_date_start, group=type, fill=type))+geom_histogram(position="dodge")+theme_bw()+
+  labs(x="Date", y="Record count")
+```
+  
+---
+background-image: url(extra/scar_logo_sm.jpg)
+background-size: auto 15%
+background-position: 98% 98%
+
+# Assessments
+
 Variations in size of *Euphausia superba* as prey:
 ```{r eval=FALSE, echo=TRUE}
 ggplot(xd %>% filter(prey_name=="Euphausia superba") %>%
@@ -353,26 +401,6 @@ dplyr::select(prey_size_mean, prey_sample_count, lon, predator_name) %>%
 dplyr::filter(!is.na(prey_size_mean) & !is.na(prey_sample_count))
 ggplot(temp, aes(lon, prey_size_mean, color=predator_name))+geom_point()+
 theme_bw()+labs(x="Longitude", y="Length (mm)")
-```
-
----
-background-image: url(extra/scar_logo_sm.jpg)
-background-size: auto 15%
-background-position: 98% 98%
-
-# Assessments
-
-Variations in size of squid beaks with predator size:
-```{r eval=FALSE, echo=TRUE}
-ggplot(xd %>% filter(prey_size_notes=="lower rostral length") %>%
-  select(prey_size_mean, predator_size_mean), ...)
-```
-```{r echo=FALSE, cache=TRUE, fig.height=4}
-temp <- xd %>% dplyr::filter(prey_size_notes=="lower rostral length") %>%
-dplyr::select(prey_size_mean, predator_size_mean, predator_size_units) %>%
-dplyr::filter(!is.na(prey_size_mean) & !is.na(predator_size_mean))
-ggplot(temp, aes(predator_size_mean, prey_size_mean))+geom_point()+
-theme_bw()+labs(x="Predator size (m)", y="Lower rostral length (mm)")
 ```
 
 ---
@@ -411,19 +439,21 @@ background-position: 98% 98%
 
 1. **Contribute data** (particularly from under-represented taxa, regions, or data types). If you have data from an unpublished paper, the data can be embargoed until publication.
 
-  - download the template and submit your data: https://github.com/SCAR/DietAndEnergetics
+  - templates: https://github.com/SCAR/DietAndEnergetics
 
-      Or, if you have a lot of data in a consistent format, we may be able to script a batch import.
+  - or, particularly if you have a lot of data, we may be able to script a batch import
+
+  - submit in parallel with journal papers?
 
 1. **Join a group** working on a paper
 
-1. **Use the database and R packages**
-
-1. **Contribute analytical code** (package or code snippets)
+1. **Use the database and R packages**, contribute analytical code (package or code snippets)
 
 1. **Make suggestions** so that this is more useful to the community
   - how you might use such data
   - what analytical functionality is needed
+
+Contact: `r htmltools::tags$a(href=paste0("mailto:",br),br)`
 
 ---
 
@@ -433,10 +463,6 @@ background-size: auto 100%
 background-position: center center
 
 # Contact
-```{r echo=FALSE}
-aw <- paste0("andrea",".","walters","@","utas.edu.au")
-br <- paste0("ben",".","raymond","@","aad.gov.au")
-```
 
 `r htmltools::tags$a(href=paste0("mailto:",br),br)`
 
