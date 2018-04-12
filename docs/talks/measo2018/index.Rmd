@@ -58,9 +58,9 @@ background-position: 98% 2%
 
 https://data.aad.gov.au/trophic
 
-#### Non-exhaustively:
+<img style="background-color: white; padding:10px; float:right;clear:none; margin:20px;" width="35%" src="extra/measoqr.png" alt="qrcode" />
 
-<img style="background-color: white; padding:10px; float:right;clear:none; margin:20px;" width="20%" src="extra/measoqr.png" alt="qrcode" />
+#### Non-exhaustively:
 
 Antonio Ag&uuml;era - Rachael Alderman - Claudia Andrade - Julia Blanchard - Madeleine Brasier - Thomas Brey - Alison Cleary - Yves Cherel - Ma&euml;lle Connan - Bruce Deagle - Hauke Flores - Miguel Guerreiro - Nicole Hellessey - Mark Hindell - Luis H&uuml;ckst&auml;dt - Simon Jarman - Kit Kovacs - Mary-Anne Lea - Silvia Louren&ccedil;o - Stacey McCormack - Julie McInnes - Jess Melbourne-Thomas - Lo&iuml;c Michel - <u>Ben Raymond</u> - Ryan Reisinger - Andy Revill - Fokje Schaafsma - Jonny Stark - Gabriele Stowasser - Arnaud Tarroux - Megan Tierney - Rowan Trebilco - Anton Van de Putte - Jan van Franeker - Filip Volckaert - Andrea Walters - Jos&eacute; Xavier
 
