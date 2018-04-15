@@ -55,7 +55,7 @@ all_stats <- bind_rows(xd %>% dplyr::summarize("Data type"="Dietary sample data 
 )
 ```
 
-# Southern Ocean Data and Energetics Database {.tabset}
+# Southern Ocean Diet and Energetics Database {.tabset}
 
 Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on [Antarctic Biodiversity Informatics (EG-ABI)](http://www.scar.org/ssg/life-sciences/eg-abi) and [Birds and Marine Mammals (EG-BAMM)](http://www.scar.org/ssg/life-sciences/bamm) are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
 
@@ -115,7 +115,7 @@ Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* 
 If you have used data from many individual sources, the overall citation for this database is:
 
 <div style="padding-left: 2em;">
-Scientific Committee on Antarctic Research (2018) Southern Ocean Data and Energetics Database. (DOI to be issued)
+Scientific Committee on Antarctic Research (2018) Southern Ocean Diet and Energetics Database. (DOI to be issued)
 </div>
 
 However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
