@@ -17,7 +17,7 @@ library(lubridate)
 options(knitr.table.format="html", knitr.kable.NA="")
 ```
 
-```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=TRUE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
 cache_dir <- tempdir()
 xd <- so_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
 xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
@@ -123,6 +123,10 @@ However, you are encouraged to cite all primary sources (possibly in supplementa
 ### Software tools
 
 As well as providing data access, the R packages mentioned above also provide functionality for working with these data. See the package home pages for more information: https://github.com/SCAR/sohungry and https://github.com/SCAR/solong.
+
+### See also
+
+The [project update](https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html) presented at the [MEASO 2018 conference](http://www.measo2018.aq/) that was held in Hobart, April 2018.
 
 
 ## People
