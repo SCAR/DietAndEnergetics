@@ -1,5 +1,5 @@
-# Presentation presented at Polar2018 Davos Swisterland
+# Presentation from Polar2018 Davos Switzerland
 
-also availabel via slideshare
+[PDF file](./0906_vandeputte_polar2018.pdf)
 
-https://www.slideshare.net/AntonDePutte/energetic-value-of-zooplankton-and-nekton-of-the-southern-ocean-a-review
+Also [available via slideshare](https://www.slideshare.net/AntonDePutte/energetic-value-of-zooplankton-and-nekton-of-the-southern-ocean-a-review)
