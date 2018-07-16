@@ -155,6 +155,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Claudia Andrade, Thomas Brey, and collaborators (subantarctic South American isotope and diet data)
 - Australian Antarctic Data Centre (the [Southern Ocean dietary database](http://data.aad.gov.au/aadc/trophic/) was used to seed this new, larger database effort)
 - Alison Cleary and collaborators (krill gut DNA data)
+- Marie Clee (data entry)
 - Nicole Hellessey (krill fatty acid/lipid data)
 - Julie McInnes (albatross diet and stable isotope data)
 - Lo&iuml;c Michel (urchin stable isotope data)
