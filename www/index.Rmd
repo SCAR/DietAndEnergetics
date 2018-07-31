@@ -161,7 +161,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Lo&iuml;c Michel (urchin stable isotope data)
 - Ryan Reisinger (Marion Island stable isotope data)
 - Fokje Schaafsma, Anton Van de Putte, and collaborators (energetics data)
-- Arnaud Tarroux, Kit Kovacs, and collaborators (seabird stable isotope data)
+- Arnaud Tarroux, Kit Kovacs, and collaborators (seal and penguin stable isotope data)
 - Megan Tierney (Macquarie Island fish energetics data)
 - Anton van de Putte, Filip Volckaert (energetics data)
 
