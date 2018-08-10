@@ -5,7 +5,7 @@ title: ""
 <link rel="stylesheet" href="css\soded.css" type="text/css" />
 
 
-```{r setup,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = FALSE, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup"}
 library(sohungry)
 library(solong)
 library(shiny)
@@ -15,6 +15,9 @@ library(dplyr)
 library(lubridate)
 
 options(knitr.table.format="html", knitr.kable.NA="")
+
+current_doi <- so_doi()
+doi_link_md <- paste0("[doi:", current_doi, "](https://doi.org/", current_doi, ")")
 ```
 
 ```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
@@ -100,8 +103,9 @@ m
 
 ## Data access
 
-Access is currently via the R packages [sohungry](https://github.com/SCAR/sohungry) (for data) and [solong](https://github.com/SCAR/solong) (for allometric equations). Other distribution mechanisms will be added in due course.
+A download link can be found along with detailed data information in the [metadata record](https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics).
 
+Access is also possible via the R packages [sohungry](https://github.com/SCAR/sohungry) (for data) and [solong](https://github.com/SCAR/solong) (for allometric equations).
 
 ### Citing
 
@@ -109,16 +113,18 @@ Access is currently via the R packages [sohungry](https://github.com/SCAR/sohung
 The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
 
 <div style="padding-left: 2em;">
-Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, (DOI to be issued)
+Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, `r doi_link_md`
 </div>
 
 If you have used data from many individual sources, the overall citation for this database is:
 
 <div style="padding-left: 2em;">
-Scientific Committee on Antarctic Research (2018) Southern Ocean Diet and Energetics Database. (DOI to be issued)
+Scientific Committee on Antarctic Research (2018) Southern Ocean Diet and Energetics Database. `r doi_link_md`
 </div>
 
 However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
+
+Note: the database receives a new DOI each time it is updated, so that a particular citation can be tied to an exact version of the database.
 
 ### Software tools
 
