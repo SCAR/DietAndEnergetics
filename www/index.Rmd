@@ -70,7 +70,7 @@ Information related to diet and energy flow is fundamental to a diverse range of
 
 
 <div style="margin-left: auto; margin-right: auto; margin-top: 50px; width: 80%;">
-```{r leaf,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=TRUE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+```{r leaf,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
 library(leaflet)
 
 tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
