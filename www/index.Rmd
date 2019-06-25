@@ -158,19 +158,23 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 
 ### Data contributors
 
-- Claudia Andrade, Thomas Brey, and collaborators (subantarctic South American isotope and diet data)
+- Claudia Andrade, Thomas Brey, and colleagues (subantarctic South American isotopes and diet)
 - Australian Antarctic Data Centre (the [Southern Ocean dietary database](http://data.aad.gov.au/aadc/trophic/) was used to seed this new, larger database effort)
-- Alison Cleary and collaborators (krill gut DNA data)
+- Laurence Clarke and colleagues (mesopelagic fish diet from gut DNA)
+- Alison Cleary and colleagues (krill diet from gut DNA)
 - Marie Clee (data entry)
-- Nicole Hellessey (krill fatty acid/lipid data)
-- Chaolun Li and colleagues (zooplankton lipid and stable isotope data)
-- Julie McInnes (albatross diet and stable isotope data)
-- Lo&iuml;c Michel (urchin stable isotope data)
-- Ryan Reisinger (Marion Island stable isotope data)
-- Fokje Schaafsma, Anton Van de Putte, and collaborators (energetics data)
-- Arnaud Tarroux, Kit Kovacs, and collaborators (seal and penguin stable isotope data)
-- Megan Tierney (Macquarie Island fish energetics data)
-- Anton van de Putte, Filip Volckaert (energetics data)
+- Sebastien Descamps and colleagues (Antarctic petrel diet and isotopes)
+- Nicole Hellessey (krill fatty acids/lipids)
+- Chaolun Li and colleagues (zooplankton lipids and stable isotopes)
+- S&iacute;lvia Louren&ccedil;o, Ryan Saunders, and colleagues (<i>Krefftichthys</i> diet)
+- Julie McInnes (albatross diet and stable isotopes)
+- Lo&iuml;c Michel, Gilles Lepoint, and colleagues (benthic stable isotopes)
+- Ryan Reisinger (Marion Island stable isotopes)
+- Fokje Schaafsma and colleagues (energetics)
+- Arnaud Tarroux, Kit Kovacs, and colleagues (seal and penguin stable isotopes)
+- Megan Tierney (Macquarie Island fish energetics)
+- Anton van de Putte, Filip Volckaert (energetics)
+- Christine Weldrick, Rowan Trebilco, Kerrie Swadling (pteropod stable isotopes)
 
 
 ## References
