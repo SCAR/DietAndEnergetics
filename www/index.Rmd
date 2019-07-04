@@ -119,7 +119,7 @@ Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* 
 If you have used data from many individual sources, the overall citation for this database is:
 
 <div style="padding-left: 2em;">
-Scientific Committee on Antarctic Research (2018) Southern Ocean Diet and Energetics Database. `r doi_link_md`
+Scientific Committee on Antarctic Research (`r format(Sys.Date(), "%Y")`) Southern Ocean Diet and Energetics Database. `r doi_link_md`
 </div>
 
 However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
