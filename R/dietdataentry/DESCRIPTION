@@ -1,0 +1,30 @@
+Package: dietdataentry
+Title: Administrative Functions for the SCAR Southern Ocean Diet and Energetics Database
+Version: 0.0.1
+Authors@R:
+    person(given = "Ben",
+           family = "Raymond",
+           role = c("aut", "cre"),
+           email = "ben.raymond@aad.gov.au")
+Description: Functions for checking and entering data to the SCAR Southern Ocean Diet and Energetics Database.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+  assertthat,
+  httr,
+  lubridate,
+  readr,
+  R.cache,
+  readxl,
+  stringdist,
+  stringr,
+  worrms
+Suggests:
+  dietdataentrydb,
+  knitr,
+  rmarkdown,
+  testthat
+RoxygenNote: 6.1.1
+Roxygen: list(markdown = TRUE)
+VignetteBuilder: knitr

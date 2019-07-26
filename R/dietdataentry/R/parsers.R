@@ -1,0 +1,1165 @@
+## todo:
+## remove the as.data.frame from read_excel calls, catch all the single-column subsetting ops
+## check all !is.na() usage and change to is_nonempty if appropriate
+## coerce timezones in parsed worksheets to GMT - or not? does it matter?
+
+tidy_source_details <- function(d) {
+    remove_doi <- function(s) gsub("(.*)[,\\.] doi:.*","\\1.", s)
+    dash_to_hyphen <- function(s) gsub("\\-+", "-", gsub(sprintf("\023"), "-", s))
+    d <- gsub("[\n\r]+", " ", d)
+    ch <- str_match_all(d,"^([^\\(]+)[ ]?(\\(.*)$")
+    out <- sapply(ch,function(z) paste(z[1, 2], dash_to_hyphen(remove_doi(z[1, 3])), sep = " "))
+    gsub("[[:space:]]+", " ", out)
+}
+
+strip_name_specials <- function(z) {
+    ## strip any special characters from our name (these are used in search_worms)
+    if (is.null(z) || length(z)<0) z else gsub("@.*$", "", z)
+}
+
+
+#' Parse source details from spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#'
+#' @return A list object with the parsed data
+#'
+#' @export
+parse_sources <- function(filename, verbosity = 1) {
+    if (is.data.frame(filename)) {
+        sx <- filename
+    } else {
+        sheet_name <- head(intersect(c("source", "sources"), excel_sheets(filename)), 1)
+        if (length(sheet_name)<1) stop("could not find sheet named \"source\" or \"sources\" in file")
+        sx <- as.data.frame(read_excel(filename,sheet=sheet_name), stringsAsFactors = FALSE)
+    }
+    ## check column names
+    check_sheet_columns(names(sx),"sources")
+    dudidx <- is.na(sx$source_id)
+    if (sum(dudidx)>0) {
+        if (verbosity>0) cat(sprintf("dropping %d rows from sources worksheet with missing source_id\n",sum(dudidx)))
+        sx <- sx[!dudidx,]
+    }
+    ## check DOI present in DOI column if also in details
+    if (any(!is_nonempty(sx$doi) & grepl("doi:",sx$details))) stop("DOI present in details but not DOI column?")
+    ## check each DOI actually resolves
+    temp <- lapply(sx$doi,function(z)if (is_nonempty(z))resolve_doi(z) else NA)
+    if (any(sapply(temp,is.null))) stop("At least one DOI does not resolve")
+    if (any(is_nonempty(sx$citation))) stop("non-missing citation info, which isn't yet handled!")
+    ## restructure as for insertion into ecology_references table
+    ssx <- data.frame(source_id=sx$source_id,
+                      details=tidy_source_details(sx$details),
+                      notes=sx$source_notes,
+                      date_created=now(tzone = "GMT"), ##created_by="", ##filename=sx$filename,
+                      doi=sx$doi,stringsAsFactors=FALSE)
+    ssx <- lapply(1:nrow(ssx),function(z)as.list(ssx[z,]))
+    list(sources=ssx,raw=sx)
+}
+
+## given the taxon table, helper function to extract rows, taking care of specials
+tt_lookup <- function(nm, taxon_table, which="name") {
+    taxon_table[strip_name_specials(taxon_table[[which]]) %eq% strip_name_specials(nm), ]
+}
+
+#' Parse energetics data spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param dbh optional: database handle
+#' @param worms_cache_directory string: path to cache directory for taxonomic data
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
+#'
+#' @return A list object with the parsed data
+#'
+#' @export
+parse_energetics <- function(filename,dbh,worms_cache_directory = NULL,verbosity=1,refresh_worms_cache=FALSE) {
+    doparse("energetics", filename=filename, dbh=dbh, worms_cache_directory=worms_cache_directory, verbosity=verbosity, refresh_worms_cache=refresh_worms_cache)
+}
+
+#' Parse lipids data spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param dbh optional: database handle
+#' @param worms_cache_directory string: path to cache directory for taxonomic data
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
+#'
+#' @return A list object with the parsed data
+#'
+#' @export
+parse_lipids <- function(filename,dbh,worms_cache_directory = NULL,verbosity=1,refresh_worms_cache=FALSE) {
+    doparse("lipids", filename=filename, dbh=dbh, worms_cache_directory=worms_cache_directory, verbosity=verbosity, refresh_worms_cache=refresh_worms_cache)
+}
+
+doparse <- function(dtype,filename,dbh,worms_cache_directory,verbosity,refresh_worms_cache) {
+    ## check inputs
+    assert_that(is.string(dtype))
+    dtype <- match.arg(tolower(dtype), c("energetics", "lipids"))
+
+    if (!missing(dbh)) assert_that(inherits(dbh,c("JDBCConnection","OdbcConnection")))
+    if (!file.exists(filename)) stop(sprintf('file %s does not exist',filename))
+
+    ## start with sources
+    sources <- parse_sources(filename,verbosity)
+
+    ## data sheet
+
+    sheets <- excel_sheets(filename)
+    if ("data" %in% sheets) {
+        this_sheet <- "data"
+    } else {
+        warning(sprintf("using the first worksheet (\"%s\")",sheets[1]))
+        this_sheet <- sheets[1]
+    }
+    r <- as.data.frame(read_excel(filename,sheet=this_sheet), stringsAsFactors = FALSE)
+    names(r) <- tolower(names(r))
+    raw_r <- r
+
+    ## trim off any trailing rows that might have been used for calculations
+    dudidx <- is.na(r$source_id)
+    if (sum(dudidx)>0) {
+        if (verbosity>0) cat(sprintf("dropping %d rows from data worksheet with missing source_id\n",sum(dudidx)))
+        r <- r[!dudidx,]
+    }
+
+    ## basic error checking
+    ## check column names
+    check_sheet_columns(names(r), dtype)
+
+    if (any(is.na(r$taxon_sample_id))) stop("missing at least one taxon_sample_id")
+    if (is.character(r$taxon_sample_id)) {
+        warning("taxon_sample_id is character: converting to numeric via as.factor. Check this!")
+        r$taxon_sample_id <- as.numeric(as.factor(r$taxon_sample_id))
+    }
+    if (any(!is_nonempty(r$entered_by))) stop("missing at least one entered_by entry")
+
+    ## convert date columns, if needed, and format
+    for (datecol in c("observation_date_start","observation_date_end")) {
+        if (inherits(r[,datecol],"character")) {
+            ## parse
+            warning("need to check parsing of text date data into dates")
+            r[,datecol] <- ymd(r[,datecol])
+        } else if (inherits(r[,datecol],c("POSIXct","POSIXlt"))) {
+            ## ok, all good
+        } else {
+            stop(sprintf("unexpected class %s of column %s",class(r[,datecol]),datecol))
+        }
+    }
+
+    ## force lower case for various columns
+    force_lc <- c("taxon_life_stage","taxon_breeding_stage","taxon_sex","body_part_used","measurement_name")
+    for (k in force_lc) r[,k] <- tolower(r[,k])
+
+    ## check unique values in columns with controlled vocabularies
+    if (verbosity>0) cat("Checking controlled vocabularies ...\n")
+    controlled_cols <- c("body_part_used", "taxon_breeding_stage", "taxon_sex", "taxon_life_stage", "measurement_name", "measurement_units")
+    for (k in controlled_cols) checkvals(r[, k], k)
+    if (dtype=="lipids") checkvals(r$measurement_class, "measurement_class")
+    if (verbosity>0) cat("done.\n")
+
+    ## find existing species names, if we've been given the handle to the database
+    existing_names <- if (missing(dbh)) c() else get_existing_names(dbh)
+
+    ## first parse all taxa
+    temp <- check_names(r$taxon_name,r$revised_taxon_name,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- temp$unmatched_names
+    taxon_table <- temp$taxon_table
+
+    if (verbosity>0) cat("\n")
+
+    ## iterate through rows of r, parsing each record
+    all_records <- list()
+    for (lidx in 1:nrow(r)) {
+        processed_cols <- c()
+        temppred <- if (is_nonempty(r$revised_taxon_name[lidx])) r$revised_taxon_name[lidx] else r$taxon_name[lidx]
+        temppred <- tidy_name(temppred)
+        if (verbosity>1) cat(sprintf("adding %s: %s\n",tt_lookup(temppred, taxon_table)$resolved_name, r$measurement_name[lidx]))
+        temp_insert <- list(taxon_name=tt_lookup(temppred, taxon_table)$resolved_name) ## temp_insert <- list(taxon_name=taxon_table$resolved_name[taxon_table$name==temppred])
+        temp_insert$taxon_name_original <- strip_name_specials(if (is_nonempty(r$revised_taxon_name[lidx]) & is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred) ## temp_insert$taxon_name_original <- if (is_nonempty(r$revised_taxon_name[lidx]) & is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred
+        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id ## this_aphia <- taxon_table$aphia_id[taxon_table$name==temppred]
+        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$taxon_aphia_id <- this_aphia
+        processed_cols <- c(processed_cols,c("taxon_name","revised_taxon_name","taxon_aphia_id"))
+        ## some fairly straightforward ones
+        ## re-add taxon_group_soki once populated
+        for (blah in c("taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count")) {
+            temp <- r[lidx,blah]
+            if (!is.na(temp) && is.na(as.numeric(temp))) {
+                cat(str(temp))
+                stop("expecting numeric type for ", blah)
+            }
+            temp <- as.numeric(temp)
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            temp_insert[[blah]] <- temp
+        }
+        for (blah in c("original_record_id", "taxon_life_stage", "taxon_breeding_stage", "body_part_used", "observation_date_notes")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah %in% c("taxon_life_stage","taxon_breeding_stage")) temp <- gsub(", ",",",temp)
+            if (grepl("/",temp) && grepl("stage",blah)) stop("taxon life_stage/breeding_stage col contains / as separator?")
+            temp_insert[[blah]] <- temp
+        }
+
+        temp_insert$taxon_sex <- nonempty_or_unknown(r$taxon_sex[lidx])
+        processed_cols <- c(processed_cols,"taxon_sex")
+
+        ## dates
+        if (!is.na(r$observation_date_start[lidx])) temp_insert$observation_date_start <- r$observation_date_start[lidx]
+        if (!is.na(r$observation_date_end[lidx])) temp_insert$observation_date_end <- r$observation_date_end[lidx]
+        processed_cols <- c(processed_cols,c("observation_date_start","observation_date_end"))
+
+        ## location
+        this_location <- tidy_name(r$location[lidx])
+        if (is_nonempty(this_location)) temp_insert$location <- this_location
+        if (!is.na(r$south[lidx])) {
+            if (abs(r$south[lidx])>90) stop(sprintf("location south on line %d beyond 90 (%g)",lidx,r$south[lidx]))
+            temp_insert$south=r$south[lidx]
+        }
+        if (!is.na(r$west[lidx])) temp_insert$west <- angle_normalise(r$west[lidx]/180*pi)/pi*180
+
+        if (!is.na(r$north[lidx])) {
+            if (abs(r$north[lidx])>90) stop(sprintf("location north on line %d beyond 90 (%g)",lidx,r$north[lidx]))
+            if (r$south[lidx]>r$north[lidx]) stop(sprintf("location south (%g) on line %d is greater than the north value (%g)",r$south[lidx],lidx,r$north[lidx]))
+            temp_insert$north=r$north[lidx]
+        }
+        if (!is.na(r$east[lidx])) temp_insert$east <- angle_normalise(r$east[lidx]/180*pi)/pi*180
+        processed_cols <- c(processed_cols,c("location","east","west","south","north"))
+        ## altitude
+        if (!is.na(r$altitude_min[lidx]) && !is.na(r$altitude_max[lidx]) && r$altitude_min[lidx]>r$altitude_max[lidx]) stop(sprintf("altitude_min (%g) greater than altitude_max (%g) on line %d",r$altitude_min[lidx],r$altitude_max[lidx],lidx))
+        if (!is.na(r$altitude_min[lidx])) temp_insert$altitude_min <- r$altitude_min[lidx]
+        if (!is.na(r$altitude_max[lidx])) temp_insert$altitude_max <- r$altitude_max[lidx]
+        processed_cols <- c(processed_cols,c("altitude_min","altitude_max"))
+        ## depth
+        tempmin <- abs(r$depth_min[lidx])
+        tempmax <- abs(r$depth_max[lidx])
+        if (!is.na(tempmin) && !is.na(tempmax) && tempmin>tempmax) stop(sprintf("depth_min (%g) greater than depth_max (%g) on line %d",tempmin,tempmax,lidx))
+        if (!is.na(tempmin)) temp_insert$depth_min <- tempmin
+        if (!is.na(tempmax)) temp_insert$depth_max <- tempmax
+        processed_cols <- c(processed_cols,c("depth_min","depth_max"))
+
+        ## actual measurements data
+        temp_insert$samples_were_pooled <- flag_to_yes_no(parse_flag(r$samples_were_pooled[lidx], treat_empty_as=FALSE))
+        processed_cols <- c(processed_cols, "samples_were_pooled")
+        if (!is_nonempty(r$measurement_name[lidx])) stop("empty measurement_name at row",lidx)
+        if (is_nonempty(r$measurement_name[lidx]) & !grepl("ratio", r$measurement_name[lidx]) & !is_nonempty(r$measurement_units[lidx])) stop("missing units at line", lidx, "? (measurement_name '", r$measurement_name[lidx], "')")
+        if (is_nonempty(r$measurement_variability_value[lidx]) & !is_nonempty(r$measurement_variability_type[lidx])) warning("empty measurement_variability_type at row",lidx)
+        dcols <- c("measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method")
+        if (dtype=="lipids") dcols <- c(dcols, "measurement_class")
+	for (blah in dcols) {
+            if (is_nonempty(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        ## source_id
+        temp_insert$source_id <- r$source_id[lidx]
+        processed_cols <- c(processed_cols,"source_id")
+
+        ## quality and other flags
+        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx],lidx)
+        temp_insert$entered_by <- r$entered_by[lidx]
+        is_sec <- parse_flag(r$is_secondary_data[lidx],treat_empty_as=FALSE)
+        temp_insert$is_secondary_data <- flag_to_yes_no(is_sec)
+        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx], treat_empty_as=TRUE))
+        processed_cols <- c(processed_cols,c("is_dodgy","entered_by","is_secondary_data","is_public"))
+
+        ## notes
+        if (is_nonempty(r$notes[lidx])) {
+            temp <- r$notes[lidx]
+            temp_insert$notes <- temp
+        }
+        processed_cols <- c(processed_cols,c("notes"))
+
+        temp_insert$last_modified <- now(tzone = "GMT")
+
+        ##cat(str(temp_insert))
+        if (!all(names(r) %in% processed_cols)) stop(sprintf("unprocessed columns: %s",paste(setdiff(names(r),processed_cols),collapse=",")))
+        temp <- setdiff(processed_cols,c(names(r),c("taxon_aphia_id")))
+        if (length(temp)>0) stop(sprintf("processed columns that apparently don't exist in the spreadsheet: %s",paste(temp,collapse=",")))
+
+        all_records <- if (length(all_records)<1) list(temp_insert) else c(all_records,list(temp_insert))
+    }
+    cat(length(all_records),"data records parsed.\n")
+    if (length(unmatched_names)>0) warning(sprintf("unmatched names: %s",paste(unmatched_names,collapse=",")))
+    cat("Unique dates found in these records:\n  ")
+    temp <- c(lapply(all_records,function(z)z$observation_date_start),lapply(all_records,function(z)z$observation_date_end))
+    temp <- sapply(unique(Filter(Negate(is.null),temp)),function(z)format(z))
+    cat(paste(temp,collapse=", "))
+
+    list(sources=sources$sources,records=all_records,raw=list(sources=sources$raw,records=raw_r))
+}
+
+
+#' Parse isotopes data spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param dbh optional: database handle
+#' @param worms_cache_directory string: path to cache directory for taxonomic data
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
+#'
+#' @return A list object with the parsed data
+#' @examples
+#' \dontrun{
+#'   ## use the example file bundled with the package
+#'   filename <- system.file("extdata/example_isotope_data.xls",
+#'                           package = "dietdataentry")
+#'   x <- parse_isotopes(filename)
+#'
+#'   ## same, but using a local cache for the taxon lookups, which will be faster
+#'   x <- parse_isotopes(filename, worms_cache_directory = "~/.Rcache")
+#' }
+#'
+#' @export
+parse_isotopes <- function(filename,dbh,worms_cache_directory = NULL,verbosity=1,refresh_worms_cache=FALSE) {
+    ## check inputs
+    if (!missing(dbh)) assert_that(inherits(dbh,c("JDBCConnection","OdbcConnection")))
+    if (!file.exists(filename)) stop(sprintf('file %s does not exist',filename))
+
+    ## start with sources
+    sources <- parse_sources(filename,verbosity)
+    valid_source_ids <- sapply(sources$sources, function(z) z$source_id)
+
+    ## isotopes data sheet
+    sheets <- excel_sheets(filename)
+    if ("isotopes" %in% sheets) {
+        this_sheet <- "isotopes"
+    } else if ("trait" %in% sheets) {
+        this_sheet <- "trait"
+    } else {
+        warning(sprintf("could not find worksheet named \"isotopes\" or \"trait\", using the first worksheet (\"%s\")",sheets[1]))
+        this_sheet <- sheets[1]
+    }
+    r <- as.data.frame(read_excel(filename,sheet=this_sheet), stringsAsFactors = FALSE)
+    raw_r <- r
+
+    ## trim off any trailing rows that might have been used for calculations
+    dudidx <- is.na(r$source_id)
+    if (sum(dudidx)>0) {
+        if (verbosity>0) cat(sprintf("dropping %d rows from isotopes worksheet with missing source_id\n",sum(dudidx)))
+        r <- r[!dudidx,]
+    }
+
+    ## rename columns for backwards compatibility with older templates
+    names(r) <- gsub("gender","sex",names(r))
+    names(r)[names(r)=="observation_date_min"] <- "observation_date_start"
+    names(r)[names(r)=="observation_date_max"] <- "observation_date_end"
+
+    ## basic error checking
+    ## check column names
+    check_sheet_columns(names(r),"isotopes")
+
+    if (any(is.na(r$taxon_sample_id))) stop("missing at least one taxon_sample_id")
+    if (is.character(r$taxon_sample_id)) {
+        warning("taxon_sample_id is character: converting to numeric via as.factor. Check this!")
+        r$taxon_sample_id <- as.numeric(as.factor(r$taxon_sample_id))
+    }
+    if (any(!is_nonempty(r$entered_by))) stop("missing at least one entered_by entry")
+
+    ## convert date columns, if needed, and format
+    for (datecol in c("observation_date_start","observation_date_end")) {
+        if (inherits(r[,datecol],"character")) {
+            ## parse
+            warning("need to check parsing of text date data into dates")
+            r[,datecol] <- ymd(r[,datecol])
+        } else if (inherits(r[,datecol],c("POSIXct","POSIXlt"))) {
+            ## ok, all good
+        } else {
+            stop(sprintf("unexpected class %s of column %s",class(r[,datecol]),datecol))
+        }
+    }
+
+    ## force lower case for various columns
+    force_lc <- c("taxon_life_stage","taxon_breeding_stage","taxon_sex","isotopes_body_part_used","taxon_size_notes","taxon_mass_notes", "isotopes_carbonates_treatment", "isotopes_lipids_treatment")
+    for (k in force_lc) r[,k] <- tolower(r[,k])
+
+    ## check unique values in columns with controlled vocabularies
+    if (verbosity>0) cat("Checking controlled vocabularies ...\n")
+    controlled_cols=c("isotopes_body_part_used","taxon_breeding_stage","taxon_sex","taxon_life_stage","taxon_mass_notes","taxon_mass_units","taxon_size_notes","taxon_size_units","delta_13C_variability_type","delta_15N_variability_type","C_N_ratio_variability_type","C_N_ratio_type","delta_34S_variability_type", "delta_15N_glutamic_acid_variability_type", "delta_15N_phenylalanine_variability_type", "isotopes_lipids_treatment","isotopes_carbonates_treatment", "isotopes_pretreatment")
+    for (k in controlled_cols) checkvals(r[,k],k)
+    if (verbosity>0) cat("done.\n")
+
+    ## find existing species names, if we've been given the handle to the database
+    existing_names <- if (missing(dbh)) c() else get_existing_names(dbh)
+
+    ## first parse all taxa
+    temp <- check_names(r$taxon_name,r$revised_taxon_name,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- temp$unmatched_names
+    taxon_table <- temp$taxon_table
+
+    if (verbosity>0) cat("\n")
+
+    ## iterate through rows of r, parsing each record
+    all_records <- list()
+    for (lidx in 1:nrow(r)) {
+        processed_cols <- c()
+        temppred <- if (is_nonempty(r$revised_taxon_name[lidx])) r$revised_taxon_name[lidx] else r$taxon_name[lidx]
+        temppred <- tidy_name(temppred)
+        if (verbosity>1) cat(sprintf("adding %s\n",tt_lookup(temppred, taxon_table)$resolved_name)) ## if (verbosity>0) cat(sprintf("adding %s\n",taxon_table$resolved_name[taxon_table$name==temppred]))
+        temp_insert <- list(taxon_name=tt_lookup(temppred, taxon_table)$resolved_name) ##temp_insert <- list(taxon_name=taxon_table$resolved_name[taxon_table$name==temppred])
+
+        temp_insert$taxon_name_original <- strip_name_specials(if (is_nonempty(r$revised_taxon_name[lidx]) & is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred) ##temp_insert$taxon_name_original <- if (is_nonempty(r$revised_taxon_name[lidx]) & is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred
+        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id ##this_aphia <- taxon_table$aphia_id[taxon_table$name==temppred]
+        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$taxon_aphia_id <- this_aphia
+        processed_cols <- c(processed_cols,c("taxon_name","revised_taxon_name","taxon_aphia_id"))
+        ## some fairly straightforward ones
+        ## re-add taxon_group_soki once populated
+        for (blah in c("original_record_id","taxon_life_stage","taxon_breeding_stage","taxon_sample_count","taxon_sample_id","taxon_size_min","taxon_size_max","taxon_size_mean","taxon_size_sd","taxon_size_units","taxon_size_notes","taxon_mass_min","taxon_mass_max","taxon_mass_mean","taxon_mass_sd","taxon_mass_units","taxon_mass_notes", "physical_sample_id","analytical_replicate_id","analytical_replicate_count")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah %in% c("taxon_life_stage","taxon_breeding_stage")) temp <- gsub(", ",",",temp)
+            if (grepl("/",temp) && grepl("stage",blah)) stop("taxon life_stage/breeding_stage col contains / as separator?")
+            temp_insert[[blah]] <- temp
+        }
+
+        temp_insert$taxon_sex <- nonempty_or_unknown(r$taxon_sex[lidx])
+        processed_cols <- c(processed_cols,"taxon_sex")
+
+        ## dates
+        if (!is.na(r$observation_date_start[lidx])) temp_insert$observation_date_start <- r$observation_date_start[lidx]
+        if (!is.na(r$observation_date_end[lidx])) temp_insert$observation_date_end <- r$observation_date_end[lidx]
+        processed_cols <- c(processed_cols,c("observation_date_start","observation_date_end"))
+
+        ## location
+        this_location <- tidy_name(r$location[lidx])
+        if (is_nonempty(this_location)) temp_insert$location <- this_location
+        if (!is.na(r$south[lidx])) {
+            if (abs(r$south[lidx])>90) stop(sprintf("location south on line %d beyond 90 (%g)",lidx,r$south[lidx]))
+            temp_insert$south=r$south[lidx]
+        }
+        if (!is.na(r$west[lidx])) temp_insert$west <- angle_normalise(r$west[lidx]/180*pi)/pi*180
+
+        if (!is.na(r$north[lidx])) {
+            if (abs(r$north[lidx])>90) stop(sprintf("location north on line %d beyond 90 (%g)",lidx,r$north[lidx]))
+            if (r$south[lidx]>r$north[lidx]) stop(sprintf("location south (%g) on line %d is greater than the north value (%g)",r$south[lidx],lidx,r$north[lidx]))
+            temp_insert$north=r$north[lidx]
+        }
+        if (!is.na(r$east[lidx])) temp_insert$east <- angle_normalise(r$east[lidx]/180*pi)/pi*180
+        processed_cols <- c(processed_cols,c("location","east","west","south","north"))
+        ## altitude
+        if (!is.na(r$altitude_min[lidx]) && !is.na(r$altitude_max[lidx]) && r$altitude_min[lidx]>r$altitude_max[lidx]) stop(sprintf("altitude_min (%g) greater than altitude_max (%g) on line %d",r$altitude_min[lidx],r$altitude_max[lidx],lidx))
+        if (!is.na(r$altitude_min[lidx])) temp_insert$altitude_min <- r$altitude_min[lidx]
+        if (!is.na(r$altitude_max[lidx])) temp_insert$altitude_max <- r$altitude_max[lidx]
+        processed_cols <- c(processed_cols,c("altitude_min","altitude_max"))
+        ## depth
+        tempmin <- abs(r$depth_min[lidx])
+        tempmax <- abs(r$depth_max[lidx])
+        if (!is.na(tempmin) && !is.na(tempmax) && tempmin>tempmax) stop(sprintf("depth_min (%g) greater than depth_max (%g) on line %d",tempmin,tempmax,lidx))
+        if (!is.na(tempmin)) temp_insert$depth_min <- tempmin
+        if (!is.na(tempmax)) temp_insert$depth_max <- tempmax
+        processed_cols <- c(processed_cols,c("depth_min","depth_max"))
+        ## habitat
+        ##if (is_nonempty(r$habitat_type[lidx])) temp_insert$habitat_type <- r$habitat_type[lidx]
+        ##processed_cols <- c(processed_cols,c("habitat_type"))
+
+
+        ## isotope data
+        temp_insert$samples_were_pooled <- flag_to_yes_no(parse_flag(r$samples_were_pooled[lidx], treat_empty_as=FALSE))
+        processed_cols <- c(processed_cols, "samples_were_pooled")
+        for (blah in c("delta_13C_mean", "delta_13C_variability_value", "delta_13C_variability_type", "delta_15N_mean", "delta_15N_variability_value", "delta_15N_variability_type", "C_N_ratio_mean", "C_N_ratio_variability_value", "C_N_ratio_variability_type", "C_N_ratio_type", "delta_34S_mean","delta_34S_variability_value","delta_34S_variability_type", "delta_15N_glutamic_acid_mean","delta_15N_glutamic_acid_variability_value","delta_15N_glutamic_acid_variability_type", "delta_15N_phenylalanine_mean","delta_15N_phenylalanine_variability_value","delta_15N_phenylalanine_variability_type", "isotopes_adjustment_notes", "isotopes_body_part_used", "isotopes_pretreatment", "isotopes_lipids_treatment", "isotopes_carbonates_treatment")) {
+            if (is_nonempty(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+        if (is_nonempty(r$C_N_ratio_mean[lidx]) & !is_nonempty(r$C_N_ratio_type[lidx])) stop("C:N ratio given but empty C_N_ratio_type on line ", lidx)
+
+        ## source_id
+        this_source_id <- r$source_id[lidx]
+        if (is.na(this_source_id)) warning("row ", lidx, " is missing source_id")
+        if (!this_source_id %in% valid_source_ids) warning("row ", lidx, " has source_id ", this_source_id, ", which does not match the sources sheet")
+        temp_insert$source_id <- this_source_id
+        processed_cols <- c(processed_cols,"source_id")
+
+        ## quality and other flags
+        temp_insert$isotopes_are_adjusted <- flag_to_yes_no(parse_flag(r$isotopes_are_adjusted[lidx],treat_empty_as=FALSE))
+        ##temp_insert$isotopes_carbonates_extracted <- flag_to_yes_no(parse_flag(r$isotopes_carbonates_extracted[lidx],treat_empty_as=NA))
+        ##temp_insert$isotopes_lipids_extracted <- flag_to_yes_no(parse_flag(r$isotopes_lipids_extracted[lidx],treat_empty_as=NA))
+        processed_cols <- c(processed_cols,"isotopes_are_adjusted")
+
+        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx],lidx)
+        temp_insert$entered_by <- r$entered_by[lidx]
+        is_sec <- parse_flag(r$is_secondary_data[lidx],treat_empty_as=FALSE)
+        temp_insert$is_secondary_data <- flag_to_yes_no(is_sec)
+        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx],treat_empty_as=TRUE))
+        processed_cols <- c(processed_cols,c("is_dodgy","entered_by","is_secondary_data","is_public"))
+
+        ## notes
+        if (is_nonempty(r$notes[lidx])) {
+            temp <- r$notes[lidx]
+            temp_insert$notes <- temp
+        }
+        processed_cols <- c(processed_cols,c("notes"))
+
+        temp_insert$last_modified <- now(tzone = "GMT")
+
+        ##cat(str(temp_insert))
+        if (!all(names(r) %in% processed_cols)) warning(sprintf("unprocessed columns: %s",paste(setdiff(names(r),processed_cols),collapse=",")))
+        temp <- setdiff(processed_cols,c(names(r),c("taxon_aphia_id")))
+        if (length(temp)>0) stop(sprintf("processed columns that apparently don't exist in the spreadsheet: %s",paste(temp,collapse=",")))
+
+        all_records <- if (length(all_records)<1) list(temp_insert) else c(all_records,list(temp_insert))
+    }
+    cat(length(all_records),"isotope data records parsed.\n")
+    if (length(unmatched_names)>0) warning(sprintf("unmatched names: %s",paste(unmatched_names,collapse=",")))
+    cat("Unique dates found in these records:\n  ")
+    temp <- c(lapply(all_records,function(z)z$observation_date_start),lapply(all_records,function(z)z$observation_date_end))
+    temp <- sapply(unique(Filter(Negate(is.null),temp)),function(z)format(z))
+    cat(paste(temp,collapse=", "))
+
+    list(sources=sources$sources,records=all_records,raw=list(sources=sources$raw,records=raw_r))
+}
+
+#' Parse DNA diet data spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param dbh optional: database handle
+#' @param worms_cache_directory string: path to cache directory for taxonomic data
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#' @param data_df data.frame: pass the data data.frame directly rather than providing the filename
+#' @param sources_df data.frame: pass the sources data.frame directly rather than providing the filename
+#' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
+#'
+#' @return A list object with the parsed data
+#'
+#' @export
+parse_dna_diet <- function(filename,dbh,worms_cache_directory = NULL,verbosity=1,data_df,sources_df,refresh_worms_cache=FALSE) {
+    ## check inputs
+    if (!missing(dbh)) assert_that(inherits(dbh,c("JDBCConnection","OdbcConnection")))
+    if (!missing(filename) && !file.exists(filename)) stop(sprintf('file %s does not exist',filename))
+    ## can supply data and sources data.frames directly
+    if (!missing(data_df)) assert_that(is.data.frame(data_df))
+    if (!missing(sources_df)) assert_that(is.data.frame(sources_df))
+
+    ## start with sources
+    sources <- parse_sources(if (!missing(sources_df)) sources_df else filename, verbosity)
+    valid_source_ids <- sapply(sources$sources, function(z) z$source_id)
+
+    ## dna diet data sheet
+    if (!missing(data_df)) {
+        r <- data_df
+    } else {
+        sheets <- excel_sheets(filename)
+        if ("DNA" %in% sheets) {
+            this_sheet <- "DNA"
+        } else {
+            warning(sprintf("could not find worksheet named \"DNA\", using the first worksheet (\"%s\")",sheets[1]))
+            this_sheet <- sheets[1]
+        }
+        r <- as.data.frame(read_excel(filename,sheet=this_sheet), stringsAsFactors = FALSE)
+    }
+    raw_r <- r
+
+    ## trim off any trailing rows that might have been used for calculations
+    dudidx <- is.na(r$source_id)
+    if (sum(dudidx)>0) {
+        if (verbosity>0) cat(sprintf("dropping %d rows from diet worksheet with missing source_id\n",sum(dudidx)))
+        r <- r[!dudidx,]
+    }
+
+    ## basic error checking
+    ## check column names
+    check_sheet_columns(names(r),"dna_diet")
+
+    if (any(is.na(r$predator_sample_id))) stop("missing at least one predator_sample_id")
+    if (is.character(r$predator_sample_id)) {
+        warning("predator_sample_id is character: converting to numeric via as.factor. Check this!")
+        r$predator_sample_id <- as.numeric(as.factor(r$predator_sample_id))
+    }
+    if (any(!is_nonempty(r$entered_by))) stop("missing at least one entered_by entry")
+
+    ## convert date columns, if needed, and format
+    for (datecol in c("observation_date_start","observation_date_end")) {
+        if (inherits(r[, datecol], "character")) {
+            ## parse
+            warning("need to check parsing of text date data into dates")
+            r[, datecol] <- ymd(r[, datecol])
+        } else if (inherits(r[,datecol],c("POSIXct","POSIXlt","Date"))) {
+            ## ok, all good
+        } else {
+            stop(sprintf("unexpected class %s of column %s",class(r[,datecol]),datecol))
+        }
+    }
+
+    ## force lower case for various columns
+    force_lc <- c("predator_life_stage","predator_breeding_stage","qualitative_dietary_importance","predator_size_notes","predator_mass_notes","predator_sex","sample_type","analysis_type","target_food_group") ##,"other_methods_applied"?
+    for (k in force_lc) r[,k] <- tolower(r[,k])
+
+    force_uc <- c("sequence")
+    for (k in force_uc) r[,k] <- toupper(r[,k])
+
+    ## check unique values in columns with controlled vocabularies
+    if (verbosity>0) cat("Checking controlled vocabularies ...\n")
+    controlled_cols=c("predator_life_stage","predator_sex","predator_breeding_stage","predator_size_units","predator_mass_units","qualitative_dietary_importance","predator_size_notes","predator_mass_notes","sample_type","DNA_extraction_method","analysis_type","sequencing_platform","target_gene","target_food_group") ##"sequence_source_id"? ,"other_methods_applied" probably not controlled
+    ## TODO: "forward_primer","reverse_primer","blocking_primer"
+    for (k in controlled_cols) checkvals(r[,k],k)
+    if (verbosity>0) cat("done.\n")
+
+    ## find existing species names, if we've been given the handle to the database
+    existing_names <- if (missing(dbh)) c() else get_existing_names(dbh)
+
+    ## first parse all taxa
+    ru <- unique(r[, c("predator_name", "revised_predator_name")])
+    temp <- check_names(ru$predator_name,ru$revised_predator_name,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- temp$unmatched_names
+    taxon_table <- temp$taxon_table
+    ru <- unique(r[, c("prey_name", "revised_prey_name")])
+    temp <- check_names(ru$prey_name,ru$revised_prey_name,existing_table=taxon_table,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- sort(unique(c(unmatched_names,temp$unmatched_names)))
+    taxon_table <- unique(rbind(taxon_table,temp$taxon_table))
+
+    if (verbosity>0) cat("\n")
+    ## iterate through rows of r, parsing each record
+    all_records <- list()
+    for (lidx in 1:nrow(r)) {
+        processed_cols <- c()
+        temppred <- if (is_nonempty(r$revised_predator_name[lidx])) r$revised_predator_name[lidx] else r$predator_name[lidx]
+        tempprey <- if (is_nonempty(r$revised_prey_name[lidx])) r$revised_prey_name[lidx] else r$prey_name[lidx]
+        temppred <- tidy_name(temppred)
+        tempprey <- tidy_name(tempprey)
+        if (verbosity>1) cat(sprintf("adding %s -> %s\n",tt_lookup(temppred, taxon_table)$resolved_name, tt_lookup(tempprey, taxon_table)$resolved_name))
+        temp_insert <- list(predator_name=tt_lookup(temppred, taxon_table)$resolved_name)
+        temp_insert$predator_name_original <- strip_name_specials(if (is_nonempty(r$revised_predator_name[lidx]) & is_nonempty(r$predator_name[lidx])) r$predator_name[lidx] else temppred)
+        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
+        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$predator_aphia_id <- this_aphia
+        processed_cols <- c(processed_cols,c("predator_name","revised_predator_name","predator_aphia_id"))
+        ## some fairly straightforward ones
+        ## re-add "predator_group_soki" once repopulated
+        for (blah in c("original_record_id","predator_life_stage","predator_breeding_stage","predator_sample_count","predator_size_min","predator_size_max","predator_size_mean","predator_size_sd","predator_size_units","predator_size_notes","predator_mass_min","predator_mass_max","predator_mass_mean","predator_mass_sd","predator_mass_units","predator_mass_notes","predator_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah %in% c("predator_life_stage","predator_breeding_stage")) temp <- gsub(", ",",",temp)
+            if (grepl("/",temp) && grepl("stage",blah)) stop("predator life_stage/breeding_stage col contains / as separator?")
+            temp_insert[[blah]] <- temp
+        }
+
+        temp_insert$predator_sex <- nonempty_or_unknown(r$predator_sex[lidx])
+        processed_cols <- c(processed_cols,"predator_sex")
+
+        temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
+        temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) & is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
+        this_aphia <- tt_lookup(tempprey, taxon_table)$aphia_id
+        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$prey_aphia_id <- this_aphia
+        processed_cols <- c(processed_cols,c("prey_name","revised_prey_name","prey_aphia_id"))
+        if (is.null(temp_insert$prey_name) || is.na(temp_insert$prey_name) || nchar(temp_insert$prey_name)<1) warning(sprintf("empty prey_name at row %d",lidx))
+
+        ## re-add "prey_group_soki" once repopulated
+        for (blah in c("prey_is_aggregate")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah=="prey_is_aggregate") {
+                ## needs to be VARCHAR
+                if (is.na(temp)) stop("this should not happen")
+                temp <- flag_to_yes_no(parse_flag(temp))
+            }
+            temp_insert[[blah]] <- temp
+        }
+
+        ## dates
+        if (!is.na(r$observation_date_start[lidx])) temp_insert$observation_date_start <- r$observation_date_start[lidx]
+        if (!is.na(r$observation_date_end[lidx])) temp_insert$observation_date_end <- r$observation_date_end[lidx]
+        processed_cols <- c(processed_cols,c("observation_date_start","observation_date_end"))
+
+        ## location
+        this_location <- tidy_name(r$location[lidx])
+        if (is_nonempty(this_location)) temp_insert$location <- this_location
+        if (!is.na(r$south[lidx])) {
+            if (abs(r$south[lidx])>90) stop(sprintf("location south on line %d beyond 90 (%g)",lidx,r$south[lidx]))
+            temp_insert$south=r$south[lidx]
+        }
+        if (!is.na(r$west[lidx])) temp_insert$west <- angle_normalise(r$west[lidx]/180*pi)/pi*180
+
+        if (!is.na(r$north[lidx])) {
+            if (abs(r$north[lidx])>90) stop(sprintf("location north on line %d beyond 90 (%g)",lidx,r$north[lidx]))
+            if (r$south[lidx]>r$north[lidx]) stop(sprintf("location south (%g) on line %d is greater than the north value (%g)",r$south[lidx],lidx,r$north[lidx]))
+            temp_insert$north=r$north[lidx]
+        }
+        if (!is.na(r$east[lidx])) temp_insert$east <- angle_normalise(r$east[lidx]/180*pi)/pi*180
+        processed_cols <- c(processed_cols,c("location","east","west","south","north"))
+        ## altitude
+        if (!is.na(r$altitude_min[lidx]) && !is.na(r$altitude_max[lidx]) && r$altitude_min[lidx]>r$altitude_max[lidx]) stop(sprintf("altitude_min (%g) greater than altitude_max (%g) on line %d",r$altitude_min[lidx],r$altitude_max[lidx],lidx))
+        if (!is.na(r$altitude_min[lidx])) temp_insert$altitude_min <- r$altitude_min[lidx]
+        if (!is.na(r$altitude_max[lidx])) temp_insert$altitude_max <- r$altitude_max[lidx]
+        processed_cols <- c(processed_cols,c("altitude_min","altitude_max"))
+        ## depth
+        tempmin <- abs(r$depth_min[lidx])
+        tempmax <- abs(r$depth_max[lidx])
+        if (!is.na(tempmin) && !is.na(tempmax) && tempmin>tempmax) stop(sprintf("depth_min (%g) greater than depth_max (%g) on line %d",tempmin,tempmax,lidx))
+        if (!is.na(tempmin)) temp_insert$depth_min <- tempmin
+        if (!is.na(tempmax)) temp_insert$depth_max <- tempmax
+        processed_cols <- c(processed_cols,c("depth_min","depth_max"))
+
+        ## methodological stuff
+        for (blah in c("sample_type","DNA_extraction_method","analysis_type","sequencing_platform","target_gene","target_food_group","forward_primer","reverse_primer","blocking_primer","primer_source_id","sequence_source_id","sequence","other_methods_applied")) {
+            if (is_nonempty(blah)) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        ## diet measures
+        for (blah in c("sequences_total","DNA_concentration","fraction_sequences_by_prey","fraction_occurrence")) {
+            if (!is.na(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        for (blah in c("qualitative_dietary_importance")) {
+            if (is_nonempty(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        ## source_id
+        this_source_id <- r$source_id[lidx]
+        if (is.na(this_source_id)) warning("row ", lidx, " is missing source_id")
+        if (!this_source_id %in% valid_source_ids) warning("row ", lidx, " has source_id ", this_source_id, ", which does not match the sources sheet")
+        temp_insert$source_id <- this_source_id
+        processed_cols <- c(processed_cols,"source_id")
+
+        ## quality and other flags
+        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx],lidx)
+        temp_insert$entered_by <- r$entered_by[lidx]
+        is_sec <- parse_flag(r$is_secondary_data[lidx],treat_empty_as=FALSE)
+        temp_insert$is_secondary_data <- flag_to_yes_no(is_sec)
+        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx],treat_empty_as=TRUE))
+        processed_cols <- c(processed_cols,c("is_dodgy","entered_by","is_secondary_data","is_public"))
+
+        ## notes
+        if (is_nonempty(r$notes[lidx])) {
+            temp <- r$notes[lidx]
+            temp_insert$notes <- temp
+        }
+        processed_cols <- c(processed_cols,c("notes"))
+
+        temp_insert$last_modified <- now(tzone = "GMT")
+
+        ##cat(str(temp_insert))
+        if (!all(names(r) %in% processed_cols)) stop(sprintf("unprocessed columns: %s",paste(setdiff(names(r),processed_cols),collapse=",")))
+        temp <- setdiff(processed_cols,c(names(r),c("predator_aphia_id","prey_aphia_id")))
+        if (length(temp)>0) stop(sprintf("processed columns that apparently don't exist in the spreadsheet: %s",paste(temp,collapse=",")))
+
+        all_records <- if (length(all_records)<1) list(temp_insert) else c(all_records,list(temp_insert))
+    }
+    cat(length(all_records),"diet data records parsed.\n")
+    if (length(unmatched_names)>0) warning(sprintf("unmatched names: %s",paste(unmatched_names,collapse=",")))
+
+    list(sources=sources$sources,records=all_records,raw=list(sources=sources$raw,records=raw_r))
+}
+
+#' Parse diet data spreadsheet
+#'
+#' @param filename string: path to Excel file
+#' @param dbh optional: database handle
+#' @param worms_cache_directory string: path to cache directory for taxonomic data
+#' @param verbosity numeric: 0 = silent, > 0 = give progress messages
+#' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
+#'
+#' @return A list object with the parsed data
+#'
+#' @examples
+#' \dontrun{
+#'   ## use the example file bundled with the package
+#'   filename <- system.file("extdata/example_diet_data.xls",
+#'                           package = "dietdataentry")
+#'   x <- parse_diet(filename)
+#'
+#'   ## same, but using a local cache for the taxon lookups, which will be faster
+#'   x <- parse_diet(filename, worms_cache_directory = "~/.Rcache")
+#' }
+#' @export
+parse_diet <- function(filename,dbh,worms_cache_directory = NULL,verbosity=1,refresh_worms_cache=FALSE) {
+    ## check inputs
+    if (!missing(dbh)) assert_that(inherits(dbh,c("JDBCConnection","OdbcConnection")))
+    if (!file.exists(filename)) stop(sprintf('file %s does not exist',filename))
+
+    ## start with sources
+    sources <- parse_sources(filename,verbosity)
+    valid_source_ids <- sapply(sources$sources, function(z) z$source_id)
+
+    ## diet data sheet
+    sheets <- excel_sheets(filename)
+    if ("trophic" %in% sheets) {
+        this_sheet <- "trophic"
+    } else if ("data" %in% sheets) {
+        this_sheet <- "data"
+    } else {
+        warning(sprintf("could not find worksheet named \"trophic\" or \"data\", using the first worksheet (\"%s\")",sheets[1]))
+        this_sheet <- sheets[1]
+    }
+    r <- as.data.frame(read_excel(filename,sheet=this_sheet), stringsAsFactors = FALSE)
+    raw_r <- r
+
+    ## trim off any trailing rows that might have been used for calculations
+    dudidx <- is.na(r$source_id)
+    if (sum(dudidx)>0) {
+        if (verbosity>0) cat(sprintf("dropping %d rows from diet worksheet with missing source_id\n",sum(dudidx)))
+        r <- r[!dudidx,]
+    }
+
+    ## rename columns for backwards compatibility with older templates
+    names(r) <- gsub("gender","sex",names(r))
+    names(r)[names(r)=="observation_date_min"] <- "observation_date_start"
+    names(r)[names(r)=="observation_date_max"] <- "observation_date_end"
+
+    ## basic error checking
+    ## check column names
+    check_sheet_columns(names(r),"diet")
+
+    if (any(is.na(r$predator_sample_id))) stop("missing at least one predator_sample_id")
+    if (is.character(r$predator_sample_id)) {
+        r$predator_sample_id <- as.numeric(as.factor(r$predator_sample_id))
+    }
+    if (any(!is_nonempty(r$entered_by))) stop("missing at least one entered_by entry")
+
+    ## convert date columns, if needed, and format
+    for (datecol in c("observation_date_start","observation_date_end")) {
+        if (inherits(r[,datecol],"character")) {
+            ## parse
+            r[, datecol] <- ymd(r[, datecol])
+        } else if (inherits(r[,datecol],c("POSIXct","POSIXlt"))) {
+            ## ok, all good
+        } else {
+            stop(sprintf("unexpected class %s of column %s",class(r[,datecol]),datecol))
+        }
+    }
+
+    ## force lower case for various columns
+    force_lc <- c("prey_life_stage","predator_life_stage","predator_breeding_stage","identification_method","qualitative_dietary_importance","prey_size_notes","prey_mass_notes","predator_size_notes","predator_mass_notes","predator_sex","prey_sex","prey_items_included","accumulated_hard_parts_treatment")
+    for (k in force_lc) r[,k] <- sub(" dna ", " DNA ", tolower(r[,k])) ## but DNA uppercase
+    for (k in "identification_method") r[,k] <- sub("(coi)", "(COI)", r[,k], fixed = TRUE) ## also (COI)
+    for (k in "identification_method") r[,k] <- sub("(18s)", "(18S)", r[,k], fixed = TRUE) ## and (18S)
+
+    ## check unique values in columns with controlled vocabularies
+    if (verbosity>0) cat("Checking controlled vocabularies ...\n")
+    controlled_cols=c("predator_life_stage","prey_life_stage","predator_sex","prey_sex","identification_method","consumption_rate_units","predator_breeding_stage","predator_size_units","predator_mass_units","prey_size_units","prey_mass_units","qualitative_dietary_importance","prey_size_notes","predator_size_notes","prey_mass_notes","predator_mass_notes","prey_items_included","accumulated_hard_parts_treatment")
+    ##have_warned_cr_units <- FALSE
+    for (k in controlled_cols) checkvals(r[,k],k)
+    if (verbosity>0) cat("done.\n")
+
+    ## find existing species names, if we've been given the handle to the database
+    existing_names <- if (missing(dbh)) c() else get_existing_names(dbh)
+
+    ## first parse all taxa
+    ru <- unique(r[, c("predator_name", "revised_predator_name")])
+    temp <- check_names(ru$predator_name,ru$revised_predator_name,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- temp$unmatched_names
+    taxon_table <- temp$taxon_table
+    ru <- unique(r[, c("prey_name", "revised_prey_name")])
+    temp <- check_names(ru$prey_name,ru$revised_prey_name,existing_table=taxon_table,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    unmatched_names <- sort(unique(c(unmatched_names,temp$unmatched_names)))
+    taxon_table <- unique(rbind(taxon_table,temp$taxon_table))
+
+    if (verbosity>0) cat("\n")
+
+    ## iterate through rows of r, parsing each record
+    ##ignore_unprocessed <- c("revised_predator_name","revised_prey_name","prey_mass_per_sample")
+    ##warn_if_isempty <- c("entered_by","predator_name","prey_name")
+    all_records <- list()
+
+    for (lidx in 1:nrow(r)) {
+        processed_cols <- c()
+        temppred <- if (is_nonempty(r$revised_predator_name[lidx])) r$revised_predator_name[lidx] else r$predator_name[lidx]
+        tempprey <- if (is_nonempty(r$revised_prey_name[lidx])) r$revised_prey_name[lidx] else r$prey_name[lidx]
+        temppred <- tidy_name(temppred)
+        tempprey <- tidy_name(tempprey)
+        if (verbosity>1) cat(sprintf("adding %s -> %s\n", tt_lookup(temppred, taxon_table)$resolved_name, tt_lookup(tempprey, taxon_table)$resolved_name))
+        temp_insert <- list(predator_name=tt_lookup(temppred, taxon_table)$resolved_name)
+        temp_insert$predator_name_original <- strip_name_specials(if (is_nonempty(r$revised_predator_name[lidx]) & is_nonempty(r$predator_name[lidx])) r$predator_name[lidx] else temppred)
+        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
+        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$predator_aphia_id <- this_aphia
+        processed_cols <- c(processed_cols,c("predator_name","revised_predator_name","predator_aphia_id"))
+        ## some fairly straightforward ones
+        ## re-add "predator_group_soki" once repopulated
+        for (blah in c("original_record_id","predator_life_stage","predator_breeding_stage","predator_sample_count","predator_size_min","predator_size_max","predator_size_mean","predator_size_sd","predator_size_units","predator_size_notes","predator_mass_min","predator_mass_max","predator_mass_mean","predator_mass_sd","predator_mass_units","predator_mass_notes","predator_sample_id")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah %in% c("predator_life_stage","predator_breeding_stage")) temp <- gsub(", ",",",temp)
+            if (grepl("/",temp) && grepl("stage",blah)) stop("predator life_stage/breeding_stage col contains / as separator?")
+            temp_insert[[blah]] <- temp
+        }
+
+        temp_insert$predator_sex <- nonempty_or_unknown(r$predator_sex[lidx])
+        processed_cols <- c(processed_cols,"predator_sex")
+
+        temp_insert$prey_sex <- nonempty_or_unknown(r$prey_sex[lidx])
+        processed_cols <- c(processed_cols,"prey_sex")
+        if (is_nonempty(tempprey)) {
+            temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
+            temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) & is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
+            this_aphia <- tt_lookup(tempprey, taxon_table)$aphia_id
+            if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$prey_aphia_id <- this_aphia
+        } else {
+            warning(sprintf("empty prey_name at row %d",lidx))
+        }
+        processed_cols <- c(processed_cols,c("prey_name","revised_prey_name","prey_aphia_id"))
+
+        ## re-add "prey_group_soki" once repopulated
+        for (blah in c("prey_is_aggregate","prey_life_stage","prey_sample_count","prey_size_min","prey_size_max","prey_size_mean","prey_size_sd","prey_size_units","prey_size_notes","prey_mass_min","prey_mass_max","prey_mass_mean","prey_mass_sd","prey_mass_units","prey_mass_notes")) {
+            temp <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+            if (is.na(temp)) next
+            if (blah %in% c("prey_life_stage","prey_breeding_stage")) temp <- gsub(", ",",",temp)
+            if (grepl("/",temp) && grepl("stage",blah)) stop("prey life_stage/breeding_stage col contains / as separator?")
+            if (blah=="prey_is_aggregate") {
+                ## needs to be VARCHAR
+                if (is.na(temp)) stop("this should not happen")
+                temp <- flag_to_yes_no(parse_flag(temp))
+            }
+            temp_insert[[blah]] <- temp
+        }
+
+        ## dates
+        if (!is.na(r$observation_date_start[lidx])) temp_insert$observation_date_start <- r$observation_date_start[lidx]
+        if (!is.na(r$observation_date_end[lidx])) temp_insert$observation_date_end <- r$observation_date_end[lidx]
+        processed_cols <- c(processed_cols,c("observation_date_start","observation_date_end"))
+
+        ## location
+        this_location <- tidy_name(r$location[lidx])
+        if (is_nonempty(this_location)) temp_insert$location <- this_location
+        if (!is.na(r$south[lidx])) {
+            if (abs(r$south[lidx])>90) stop(sprintf("location south on line %d beyond 90 (%g)",lidx,r$south[lidx]))
+            temp_insert$south=r$south[lidx]
+        }
+        if (!is.na(r$west[lidx])) temp_insert$west <- angle_normalise(r$west[lidx]/180*pi)/pi*180
+
+        if (!is.na(r$north[lidx])) {
+            if (abs(r$north[lidx])>90) stop(sprintf("location north on line %d beyond 90 (%g)",lidx,r$north[lidx]))
+            if (r$south[lidx]>r$north[lidx]) stop(sprintf("location south (%g) on line %d is greater than the north value (%g)",r$south[lidx],lidx,r$north[lidx]))
+            temp_insert$north=r$north[lidx]
+        }
+        if (!is.na(r$east[lidx])) temp_insert$east <- angle_normalise(r$east[lidx]/180*pi)/pi*180
+        processed_cols <- c(processed_cols,c("location","east","west","south","north"))
+        ## altitude
+        if (!is.na(r$altitude_min[lidx]) && !is.na(r$altitude_max[lidx]) && r$altitude_min[lidx]>r$altitude_max[lidx]) stop(sprintf("altitude_min (%g) greater than altitude_max (%g) on line %d",r$altitude_min[lidx],r$altitude_max[lidx],lidx))
+        if (!is.na(r$altitude_min[lidx])) temp_insert$altitude_min <- r$altitude_min[lidx]
+        if (!is.na(r$altitude_max[lidx])) temp_insert$altitude_max <- r$altitude_max[lidx]
+        processed_cols <- c(processed_cols,c("altitude_min","altitude_max"))
+        ## depth
+        tempmin <- abs(r$depth_min[lidx])
+        tempmax <- abs(r$depth_max[lidx])
+        if (!is.na(tempmin) && !is.na(tempmax) && tempmin>tempmax) stop(sprintf("depth_min (%g) greater than depth_max (%g) on line %d",tempmin,tempmax,lidx))
+        if (!is.na(tempmin)) temp_insert$depth_min <- tempmin
+        if (!is.na(tempmax)) temp_insert$depth_max <- tempmax
+        processed_cols <- c(processed_cols,c("depth_min","depth_max"))
+        ## habitat
+        ##if (is_nonempty(r$habitat_type[lidx])) temp_insert$habitat_type <- r$habitat_type[lidx]
+        ##processed_cols <- c(processed_cols,c("habitat_type"))
+
+        if (is_nonempty(r$identification_method[lidx])) {
+            temp_insert$identification_method <- r$identification_method[lidx]
+        } else {
+            warning(sprintf("missing identification method at row %d",lidx))
+        }
+        processed_cols <- c(processed_cols,c("identification_method"))
+
+        ## diet measures
+        for (blah in c("fraction_diet_by_weight","fraction_diet_by_prey_items","fraction_occurrence")) {
+            if (!is.na(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        for (blah in c("qualitative_dietary_importance","consumption_rate_min","consumption_rate_max","consumption_rate_mean","consumption_rate_sd","consumption_rate_units","consumption_rate_notes")) {
+            if (is_nonempty(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
+            processed_cols <- c(processed_cols,blah)
+        }
+
+        temp_insert$prey_items_included <- nonempty_or_unknown(r$prey_items_included[lidx])
+        processed_cols <- c(processed_cols,"prey_items_included")
+        temp_insert$accumulated_hard_parts_treatment <- nonempty_or_unknown(r$accumulated_hard_parts_treatment[lidx])
+        processed_cols <- c(processed_cols,"accumulated_hard_parts_treatment")
+
+        ## source_id
+        this_source_id <- r$source_id[lidx]
+        if (is.na(this_source_id)) warning("row ", lidx, " is missing source_id")
+        if (!this_source_id %in% valid_source_ids) warning("row ", lidx, " has source_id ", this_source_id, ", which does not match the sources sheet")
+        temp_insert$source_id <- r$source_id[lidx]
+        processed_cols <- c(processed_cols,"source_id")
+
+        ## quality and other flags
+        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx],lidx)
+        temp_insert$entered_by <- r$entered_by[lidx]
+        is_sec <- parse_flag(r$is_secondary_data[lidx],treat_empty_as=FALSE)
+        temp_insert$is_secondary_data <- flag_to_yes_no(is_sec)
+        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx],treat_empty_as=TRUE))
+        processed_cols <- c(processed_cols,c("is_dodgy","entered_by","is_secondary_data","is_public"))
+
+        ## notes
+        if (is_nonempty(r$notes[lidx])) {
+            temp <- r$notes[lidx]
+            temp_insert$notes <- temp
+        }
+        processed_cols <- c(processed_cols,c("notes"))
+
+        temp_insert$last_modified <- now(tzone = "GMT")
+
+        ##cat(str(temp_insert))
+        if (!all(names(r) %in% processed_cols)) stop(sprintf("unprocessed columns: %s",paste(setdiff(names(r),processed_cols),collapse=",")))
+        temp <- setdiff(processed_cols,c(names(r),c("predator_aphia_id","prey_aphia_id")))
+        if (length(temp)>0) stop(sprintf("processed columns that apparently don't exist in the spreadsheet: %s",paste(temp,collapse=",")))
+
+        all_records <- if (length(all_records)<1) list(temp_insert) else c(all_records,list(temp_insert))
+    }
+    cat(length(all_records),"diet data records parsed.\n")
+    if (length(unmatched_names)>0) warning(sprintf("unmatched names: %s",paste(unmatched_names,collapse=",")))
+
+    list(sources=sources$sources,records=all_records,raw=list(sources=sources$raw,records=raw_r))
+}
+
+check_sheet_columns <- function(names_provided, sheet_type) {
+    assert_that(is.character(names_provided))
+    assert_that(is.string(sheet_type))
+    sheet_type <- match.arg(tolower(sheet_type), c("diet", "dna_diet", "isotopes", "energetics", "sources", "lipids"))
+    expected <- switch(sheet_type,
+                       diet=c("source_id","original_record_id","location","west","east","south","north","altitude_min","altitude_max","depth_min","depth_max","observation_date_start","observation_date_end","predator_name","revised_predator_name","predator_life_stage","predator_breeding_stage","predator_sex","predator_sample_count","predator_size_min","predator_size_max","predator_size_mean","predator_size_sd","predator_size_units","predator_size_notes","predator_mass_min","predator_mass_max","predator_mass_mean","predator_mass_sd","predator_mass_units","predator_mass_notes","predator_sample_id","prey_name","revised_prey_name","prey_is_aggregate","prey_life_stage","prey_sex","prey_sample_count","prey_size_min","prey_size_max","prey_size_mean","prey_size_sd","prey_size_units","prey_size_notes","prey_mass_min","prey_mass_max","prey_mass_mean","prey_mass_sd","prey_mass_units","prey_mass_notes","fraction_diet_by_weight","fraction_diet_by_prey_items","fraction_occurrence","prey_items_included","accumulated_hard_parts_treatment","qualitative_dietary_importance","consumption_rate_min","consumption_rate_max","consumption_rate_mean","consumption_rate_sd","consumption_rate_units","consumption_rate_notes","identification_method","is_dodgy","is_secondary_data","is_public","entered_by","notes"),
+                       isotopes=c("source_id","original_record_id","location","west","east","south","north","altitude_min","altitude_max","depth_min","depth_max","observation_date_start","observation_date_end","taxon_name","revised_taxon_name","taxon_life_stage","taxon_breeding_stage","taxon_sex","taxon_sample_count","taxon_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count","samples_were_pooled","taxon_size_min","taxon_size_max","taxon_size_mean","taxon_size_sd","taxon_size_units","taxon_size_notes","taxon_mass_min","taxon_mass_max","taxon_mass_mean","taxon_mass_sd","taxon_mass_units","taxon_mass_notes","delta_13C_mean","delta_13C_variability_value","delta_13C_variability_type","delta_15N_mean","delta_15N_variability_value","delta_15N_variability_type","C_N_ratio_mean","C_N_ratio_variability_value","C_N_ratio_variability_type","C_N_ratio_type","isotopes_pretreatment","isotopes_are_adjusted","isotopes_adjustment_notes","isotopes_carbonates_treatment","isotopes_lipids_treatment","isotopes_body_part_used","is_dodgy","is_secondary_data","is_public","entered_by","notes", "delta_34S_mean","delta_34S_variability_value","delta_34S_variability_type",
+                         "delta_15N_glutamic_acid_mean", "delta_15N_glutamic_acid_variability_value", "delta_15N_glutamic_acid_variability_type",
+                         "delta_15N_phenylalanine_mean", "delta_15N_phenylalanine_variability_value", "delta_15N_phenylalanine_variability_type"),
+                       dna_diet=c("source_id","original_record_id","location","west","east","south","north","altitude_min","altitude_max","depth_min","depth_max","observation_date_start","observation_date_end","predator_name","revised_predator_name","predator_life_stage","predator_breeding_stage","predator_sex","predator_sample_count","predator_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count","predator_size_min","predator_size_max","predator_size_mean","predator_size_sd","predator_size_units","predator_size_notes","predator_mass_min","predator_mass_max","predator_mass_mean","predator_mass_sd","predator_mass_units","predator_mass_notes","prey_name","revised_prey_name","prey_is_aggregate","sequences_total","DNA_concentration","fraction_sequences_by_prey","fraction_occurrence","sample_type","DNA_extraction_method","analysis_type","sequencing_platform","target_gene","target_food_group","forward_primer","reverse_primer","blocking_primer","primer_source_id","sequence_source_id","sequence","other_methods_applied","qualitative_dietary_importance","is_dodgy","is_secondary_data","is_public","entered_by","notes"),
+                       sources=c("source_id","details","source_notes","doi","citation"),
+                       energetics=c("source_id","original_record_id","location","west","east","south","north","altitude_min","altitude_max","depth_min","depth_max","observation_date_start","observation_date_end","observation_date_notes","taxon_name","revised_taxon_name","taxon_life_stage","taxon_breeding_stage","taxon_sex","taxon_sample_count","taxon_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count","samples_were_pooled","body_part_used","measurement_name","measurement_min_value","measurement_max_value","measurement_mean_value","measurement_variability_value","measurement_variability_type","measurement_units","measurement_method","is_dodgy","is_secondary_data","is_public","entered_by","notes"),
+                       lipids=c("source_id","original_record_id","location","west","east","south","north","altitude_min","altitude_max","depth_min","depth_max","observation_date_start","observation_date_end","observation_date_notes","taxon_name","revised_taxon_name","taxon_life_stage","taxon_breeding_stage","taxon_sex","taxon_sample_count","taxon_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count","samples_were_pooled","body_part_used","measurement_name","measurement_class","measurement_min_value","measurement_max_value","measurement_mean_value","measurement_variability_value","measurement_variability_type","measurement_units","measurement_method","is_dodgy","is_secondary_data","is_public","entered_by","notes"),
+                       stop(sprintf("expected columns for sheet_type %s not coded yet",sheet_type)))
+    if (!all(expected %in% names_provided)) stop("columns missing from spreadsheet: ",paste(setdiff(expected,names_provided),collapse=","))
+    if (!all(names_provided %in% expected)) warning("ignoring unexpected columns in spreadsheet: ",paste(setdiff(names_provided,expected),sep=","))
+    invisible(TRUE)
+}
+
+columns_order <- function(data_type) {
+    data_type <- match.arg(tolower(data_type), c("diet", "dna_diet", "isotopes", "energetics", "sources", "lipids"))
+    out <- switch(data_type,
+                  diet = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "predator_name_original", "revised_predator_name", "predator_aphia_id", "predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus", "predator_group_soki", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id", "prey_name", "prey_name_original", "revised_prey_name", "prey_aphia_id", "prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus", "prey_group_soki", "prey_is_aggregate", "prey_life_stage", "prey_sex", "prey_sample_count", "prey_size_min", "prey_size_max", "prey_size_mean", "prey_size_sd", "prey_size_units", "prey_size_notes", "prey_mass_min", "prey_mass_max", "prey_mass_mean", "prey_mass_sd", "prey_mass_units", "prey_mass_notes", "fraction_diet_by_weight", "fraction_diet_by_prey_items", "fraction_occurrence", "prey_items_included", "accumulated_hard_parts_treatment", "qualitative_dietary_importance", "consumption_rate_min", "consumption_rate_max", "consumption_rate_mean", "consumption_rate_sd", "consumption_rate_units", "consumption_rate_notes", "identification_method", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
+                  isotopes = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "observation_date_start", "observation_date_end", "altitude_min", "altitude_max", "depth_min", "depth_max", "taxon_name", "taxon_name_original", "revised_taxon_name", "taxon_aphia_id", "taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus", "taxon_group_soki", "taxon_group", "taxon_breeding_stage", "taxon_life_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "taxon_size_min", "taxon_size_max", "taxon_size_mean", "taxon_size_sd", "taxon_size_units", "taxon_size_notes", "taxon_mass_min", "taxon_mass_max", "taxon_mass_mean", "taxon_mass_sd", "taxon_mass_units", "taxon_mass_notes", "delta_13C_mean", "delta_13C_variability_value", "delta_13C_variability_type", "delta_15N_mean", "delta_15N_variability_value", "delta_15N_variability_type", "delta_34S_mean", "delta_34S_variability_value", "delta_34S_variability_type", "C_N_ratio_mean", "C_N_ratio_variability_value", "C_N_ratio_variability_type", "C_N_ratio_type",
+                               "delta_15N_glutamic_acid_mean", "delta_15N_glutamic_acid_variability_value", "delta_15N_glutamic_acid_variability_type",
+                               "delta_15N_phenylalanine_mean", "delta_15N_phenylalanine_variability_value", "delta_15N_phenylalanine_variability_type",
+                               "isotopes_pretreatment", "isotopes_are_adjusted", "isotopes_adjustment_notes", "isotopes_carbonates_treatment", "isotopes_lipids_treatment", "isotopes_body_part_used", "measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_secondary_data", "is_dodgy", "quality_flag", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
+                  dna_diet = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "predator_name_original", "revised_predator_name", "predator_aphia_id", "predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus", "predator_group_soki", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "prey_name", "prey_name_original", "revised_prey_name", "prey_aphia_id", "prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus", "prey_group_soki", "prey_is_aggregate", "sequences_total", "DNA_concentration", "fraction_sequences_by_prey", "fraction_occurrence", "sample_type", "DNA_extraction_method", "analysis_type", "sequencing_platform", "target_gene", "target_food_group", "forward_primer", "reverse_primer", "blocking_primer", "primer_source_id", "sequence_source_id", "sequence", "other_methods_applied", "qualitative_dietary_importance", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
+                  sources = c("source_id", "details", "doi", "source_notes", "notes", "citation", "date_created"),
+                  lipids = ,
+                  energetics = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "observation_date_notes", "taxon_name", "revised_taxon_name", "taxon_name_original", "taxon_aphia_id", "taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus", "taxon_group_soki", "taxon_group", "taxon_life_stage", "taxon_breeding_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "body_part_used", "measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
+                  stop(sprintf("expected columns for sheet_type %s not coded yet",data_type)))
+    if (data_type=="lipids") {
+        ## lipids identical to energetics except has "measurement_class" added
+        idx <- which(out=="measurement_name")
+        out <- c(out[1:idx], "measurement_class", out[(idx+1):length(out)])
+    }
+    tolower(out)
+}
+
+check_names <- function(this_names,this_names_revised,existing_table,existing_names=c(),cache_directory,verbosity,force=FALSE, marine_only=TRUE) {
+    unmatched_names <- c()
+    if (missing(existing_table)) {
+        taxon_table <- data.frame(name="bilbobaggins",resolved_name="bilbobaggins",aphia_id=NA,stringsAsFactors=FALSE)
+    } else {
+        taxon_table <- existing_table
+        if (!identical(sort(names(taxon_table)),c("aphia_id", "name", "resolved_name"))) stop("unexpected names in existing_table")
+    }
+    if (missing(cache_directory)) cache_directory <- NULL
+    for (k in 1:length(this_names)) {
+        this_taxon <- if (is_nonempty(this_names_revised[k])) this_names_revised[k] else this_names[k]
+        if (is.na(this_taxon)) next
+        this_taxon <- tidy_name(this_taxon)
+        if (!this_taxon %in% taxon_table$name) {
+            if (verbosity>0) cat(sprintf("\n%s:\n",this_taxon))
+            ##idx=strmatch(lower(this_taxon),special_taxa,'exact');
+            ##if ~isempty(idx),
+            ##  if isfield(special_taxa_details{idx},'resolved_name'),
+            ##    taxon_resolved_name.put(this_taxon,special_taxa_details{idx}.resolved_name);
+            ##  else
+            ##    taxon_resolved_name.put(this_taxon,[upper(special_taxa{idx}(1)) lower(special_taxa{idx}(2:end))]);
+            ##  end
+            ##  if ~isnan(special_taxa_details{idx}.taxon_id),
+            ##    taxon_id.put(this_taxon,special_taxa_details{idx}.taxon_id);
+            ##  end
+            ##  if ~isempty(special_taxa_details{idx}.rank),
+            ##    taxon_rank.put(this_taxon,special_taxa_details{idx}.rank);
+            ##  end
+            ##  if ~isempty(special_taxa_details{idx}.details),
+            ##    taxon_details.put(this_taxon,special_taxa_details{idx}.details);
+            ##  end
+            ##  if ~isempty(special_taxa_details{idx}.group),
+            ##    taxon_group.put(this_taxon,special_taxa_details{idx}.group);
+            ##  end
+            ##  if ~isempty(special_taxa_details{idx}.life_stage),
+            ##    taxon_life_stage.put(this_taxon,special_taxa_details{idx}.life_stage);
+            ##  end
+            ##else
+            ##if ~isnan(this_group_col) & ~isempty(r{k,this_group_col}),
+            ##  % this taxon has been assigned to a group
+            ##  taxon_group.put(this_taxon,r{k,this_group_col});
+            ##end
+
+            ## taxonomy check via worms
+            this_filter <- NULL
+            ## some special cases
+            if (tolower(this_taxon)=="pachyptila desolata") {
+                thisrecord <- search_worms(this_taxon,cache_directory=cache_directory,acceptable_status=c("unaccepted"),follow_valid=FALSE,force=force)
+            } else {
+                if (tolower(this_taxon) %in% c("heterorhabdus","heterorhabdus sp."))
+                    this_taxon <- "Heterorhabdus@phylum:Arthropoda"
+                else if (tolower(this_taxon) %in% c("ctenophora"))
+                    this_taxon <- "Ctenophora@phylum:Ctenophora"
+                else if (tolower(this_taxon) %in% c("grateloupia","grateloupia sp."))
+                    this_taxon <- "Grateloupia@phylum:Rhodophyta"
+                else if (tolower(this_taxon) %in% c("lumbricidae"))
+                    this_taxon <- "Lumbricidae@marine_only:FALSE"
+                thisrecord <- search_worms(this_taxon, cache_directory=cache_directory, filter=this_filter, force=force, marine_only=marine_only)
+            }
+            this_resolved_name <- this_taxon
+            if (nrow(thisrecord)!=1 || is.na(thisrecord$AphiaID)) {
+                ## no matches - was it a "sp." name?
+                temp_name <- this_taxon
+                if (length(str_split(temp_name," ")[[1]])==2) {
+                    temp_name <- gsub(" (spp|spp\\.|sp|sp\\.)$","",temp_name)
+                }
+                temp_record <- search_worms(temp_name,cache_directory=cache_directory,filter=this_filter,force=force)
+                if (nrow(temp_record)==1) {
+                    ## ok, matched on this
+                    thisrecord <- temp_record
+                    this_resolved_name <- strip_name_specials(temp_name)
+                }
+            }
+            if (nrow(thisrecord)!=1 || is.na(thisrecord$AphiaID)) {
+                unmatched_names <- unique(c(unmatched_names,this_taxon))
+                if (verbosity>0) cat(sprintf(" Not matched.\n"))
+                if (length(str_split(this_resolved_name," ")[[1]])==2) {
+                    this_resolved_name <- gsub(" spp\\.?$"," sp.",this_resolved_name)
+                    this_resolved_name <- gsub(" sp$"," sp.",this_resolved_name)
+                    this_resolved_name <- strip_name_specials(this_resolved_name)
+                }
+                taxon_table <- rbind(taxon_table,data.frame(name=this_taxon,resolved_name=this_resolved_name,aphia_id=NA,stringsAsFactors=FALSE))
+            } else {
+                this_resolved_name <- strip_name_specials(this_resolved_name)
+                if (verbosity>0) cat(sprintf(" AphiaID: %d\n",thisrecord$AphiaID))
+               ##cat(str(thisrecord));
+                ##                stop()
+                cat(sprintf(" Matched at rank: %s\n",thisrecord$rank))
+                cat(sprintf(" [%s %s %s %s %s %s]\n",thisrecord$kingdom,thisrecord$phylum,thisrecord$class,thisrecord$order,thisrecord$family,thisrecord$genus))
+                if (tolower(thisrecord$rank) %in% c("species","subspecies")) this_resolved_name=thisrecord$scientificname
+                ## only use returned name if it was matched at species or subspecies level
+                taxon_table <- rbind(taxon_table,data.frame(name=this_taxon,resolved_name=this_resolved_name,aphia_id=thisrecord$AphiaID,stringsAsFactors=FALSE))
+            }
+            if (verbosity>0) cat(sprintf(" Using resolved name: %s\n",this_resolved_name))
+
+            ## check against existing names
+            if (length(existing_names)>0) {
+                temp_score <- stringsim(this_resolved_name, existing_names)
+                if (any(temp_score==1)) {
+                    cat("  ++  exact match in existing trophic names\n")
+                    temp_idx <- c()##which(temp_score>0.99)
+                } else {
+                    cat("  -- no exact match in existing trophic names\n")
+                    temp_idx <- tail(order(temp_score),5)
+                    temp_idx <- temp_idx[temp_score[temp_idx]>0.5]
+                    temp_idx <- temp_idx[order(temp_score[temp_idx],decreasing=TRUE)] ## closest match first
+                }
+                if (length(temp_idx)>0) {
+                    cat("     closest matches:\n")
+                    cat(sprintf("       %s\n",existing_names[temp_idx]),sep="")
+                }
+            }
+        }
+    }
+    list(taxon_table=taxon_table[taxon_table$name!="bilbobaggins",],unmatched_names=unmatched_names) ## drop the dummy row before returning
+}
+
+
