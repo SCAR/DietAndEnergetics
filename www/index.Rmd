@@ -103,7 +103,7 @@ m
 
 ## Data access
 
-A download link can be found along with detailed data information in the [metadata record](https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics).
+Detailed data information can be found in the [metadata record](https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics), and the data can be downloaded from the [GitHub repository](https://github.com/SCAR/sohungry/releases).
 
 Access is also possible via the R packages [sohungry](https://github.com/SCAR/sohungry) (for data) and [solong](https://github.com/SCAR/solong) (for allometric equations).
 
