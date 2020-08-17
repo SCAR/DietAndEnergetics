@@ -17,7 +17,7 @@ library(lubridate)
 options(knitr.table.format="html", knitr.kable.NA="")
 
 current_doi <- so_doi()
-doi_link_md <- paste0("[doi:", current_doi, "](https://doi.org/", current_doi, ")")
+doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_blank\" rel=\"noopener noreferrer\">doi:", current_doi, "</a>")
 ```
 
 ```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
@@ -43,9 +43,9 @@ xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
   xl %>% dplyr::select(source_id, source_details, source_doi),
   xe %>% dplyr::select(source_id, source_details, source_doi)) %>%
   distinct %>% dplyr::arrange(source_id) %>%
-  mutate(source_details=iconv(source_details, to="ASCII//TRANSLIT")) %>%
+  ##mutate(source_details=stringi::stri_trans_general(source_details, id = "latin-ascii")) %>%
   dplyr::rename("Source ID"=source_id, Details=source_details, DOI=source_doi) %>%
-  dplyr::mutate(DOI=case_when(grepl("^10\\.", DOI)~paste0("https://doi.org/", DOI),
+  dplyr::mutate(DOI=case_when(grepl("^10\\.", DOI)~DOI,##paste0("https://doi.org/", DOI),
     is.na(DOI)~"",
     TRUE~DOI))
 
@@ -60,7 +60,7 @@ all_stats <- bind_rows(xd %>% dplyr::summarize("Data type"="Dietary sample data 
 
 # Southern Ocean Diet and Energetics Database {.tabset}
 
-Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on [Antarctic Biodiversity Informatics (EG-ABI)](http://www.scar.org/ssg/life-sciences/eg-abi) and [Birds and Marine Mammals (EG-BAMM)](http://www.scar.org/ssg/life-sciences/bamm) are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
+Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on <a href="http://www.scar.org/ssg/life-sciences/eg-abi" target="_blank" rel="noopener noreferrer">Antarctic Biodiversity Informatics (EG-ABI)</a> and <a href="http://www.scar.org/ssg/life-sciences/bamm" target="_blank" rel="noopener noreferrer">Birds and Marine Mammals (EG-BAMM)</a> are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
 
 <div style="height: 20px;"></div>
 
@@ -103,9 +103,9 @@ m
 
 ## Data access
 
-Detailed data information can be found in the [metadata record](https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics), and the data can be downloaded from [Zenodo](https://zenodo.org/record/3973742).
+Detailed data information can be found in the <a href="https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics" target="_blank" rel="noopener noreferrer">metadata record</a>, and the data can be downloaded from <a href="https://zenodo.org/record/3973742" target="_blank" rel="noopener noreferrer">Zenodo</a>.
 
-Access is also possible via the R packages [sohungry](https://github.com/SCAR/sohungry) (for data) and [solong](https://github.com/SCAR/solong) (for allometric equations).
+Access is also possible via the R packages <a href="https://github.com/SCAR/sohungry" target="_blank" rel="noopener noreferrer">sohungry</a> (for data) and <a href="https://github.com/SCAR/solong" target="_blank" rel="noopener noreferrer">solong</a> (for allometric equations).
 
 ### Citing
 
@@ -128,16 +128,16 @@ Note: the database receives a new DOI each time it is updated, so that a particu
 
 ### Software tools
 
-As well as providing data access, the R packages mentioned above also provide functionality for working with these data. See the package home pages for more information: https://github.com/SCAR/sohungry and https://github.com/SCAR/solong.
+As well as providing data access, the R packages mentioned above also provide functionality for working with these data. See the package home pages for more information: <a href="https://github.com/SCAR/sohungry" target="_blank" rel="noopener noreferrer">sohungry</a> (for data) and <a href="https://github.com/SCAR/solong" target="_blank" rel="noopener noreferrer">solong</a>.
 
 ### See also
 
-The [project update](https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html) presented at the [MEASO 2018 conference](http://www.measo2018.aq/) that was held in Hobart, April 2018.
+The <a href="https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html" target="_blank" rel="noopener noreferrer">project update</a> presented at the <a href="http://www.measo2018.aq/" target="_blank" rel="noopener noreferrer">MEASO 2018 conference</a> that was held in Hobart, April 2018.
 
 
 ## People
 
-Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to [make contact](http://www.scar.org/eg-abi/abi-contact).
+Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to <a href="http://www.scar.org/eg-abi/abi-contact" target="_blank" rel="noopener noreferrer">make contact</a>.
 
 ### Core project working group
 
@@ -159,7 +159,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 ### Data contributors
 
 - Claudia Andrade, Thomas Brey, and colleagues (subantarctic South American isotopes and diet)
-- Australian Antarctic Data Centre (the [Southern Ocean dietary database](http://data.aad.gov.au/aadc/trophic/) was used to seed this new, larger database effort)
+- Australian Antarctic Data Centre (the Southern Ocean dietary database was used to seed this new, larger database effort)
 - Laurence Clarke and colleagues (mesopelagic fish diet from gut DNA)
 - Alison Cleary and colleagues (krill diet from gut DNA)
 - Marie Clee (data entry)

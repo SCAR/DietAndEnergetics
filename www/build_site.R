@@ -1,2 +1,1 @@
-library(rmarkdown)
-render_site()
+rmarkdown::render_site()
