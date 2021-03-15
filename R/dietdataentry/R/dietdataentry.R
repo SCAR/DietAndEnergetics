@@ -1,8 +1,10 @@
 #' \pkg{dietdataentry}
 #'
+#' @description Functions for checking and entering data to the SCAR Southern Ocean Diet and Energetics Database
+#' 
 #' @name dietdataentry
 #' @docType package
-#' @references \url{http://data.aad.gov.au/trophic}
+#' @references \url{https://scar.org/resources/southern-ocean-diet-energetics/}
 #' @importFrom assertthat assert_that is.flag is.number is.string
 #' @importFrom httr content GET
 #' @importFrom lubridate now ymd ymd_hms

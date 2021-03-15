@@ -4,8 +4,13 @@
 \alias{parse_energetics}
 \title{Parse energetics data spreadsheet}
 \usage{
-parse_energetics(filename, dbh, worms_cache_directory = NULL,
-  verbosity = 1, refresh_worms_cache = FALSE)
+parse_energetics(
+  filename,
+  dbh,
+  worms_cache_directory = NULL,
+  verbosity = 1,
+  refresh_worms_cache = FALSE
+)
 }
 \arguments{
 \item{filename}{string: path to Excel file}

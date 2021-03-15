@@ -3,11 +3,10 @@
 \docType{package}
 \name{dietdataentry}
 \alias{dietdataentry}
-\alias{dietdataentry-package}
 \title{\pkg{dietdataentry}}
 \description{
-\pkg{dietdataentry}
+Functions for checking and entering data to the SCAR Southern Ocean Diet and Energetics Database
 }
 \references{
-\url{http://data.aad.gov.au/trophic}
+\url{https://scar.org/resources/southern-ocean-diet-energetics/}
 }

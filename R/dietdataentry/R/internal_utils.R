@@ -4,7 +4,8 @@ is_nonempty <- function(z) if (is.null(z)) FALSE else !is.na(z) & (!is.character
 
 nonempty_or_unknown <- function(z) if (is_nonempty(z)) z else "unknown"
 
-angle_normalise <- function(x) { (x+pi)%%(2*pi)-pi } ## normalize angle to range [-pi,pi)
+angle_normalise <- function(x) { (x + pi) %% (2 * pi) - pi } ## normalize angle to range [-pi,pi)
+deg_normalise <- function(x) angle_normalise(x / 180 * pi) / pi * 180
 
 recase <- function(x) paste0(toupper(substr(x, 1, 1)), tolower(substr(x, 2, nchar(x))))
 

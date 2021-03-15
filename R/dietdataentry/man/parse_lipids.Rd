@@ -4,8 +4,13 @@
 \alias{parse_lipids}
 \title{Parse lipids data spreadsheet}
 \usage{
-parse_lipids(filename, dbh, worms_cache_directory = NULL,
-  verbosity = 1, refresh_worms_cache = FALSE)
+parse_lipids(
+  filename,
+  dbh,
+  worms_cache_directory = NULL,
+  verbosity = 1,
+  refresh_worms_cache = FALSE
+)
 }
 \arguments{
 \item{filename}{string: path to Excel file}

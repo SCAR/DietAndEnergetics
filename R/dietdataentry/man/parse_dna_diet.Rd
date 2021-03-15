@@ -4,13 +4,23 @@
 \alias{parse_dna_diet}
 \title{Parse DNA diet data spreadsheet}
 \usage{
-parse_dna_diet(filename, dbh, worms_cache_directory = NULL,
-  verbosity = 1, data_df, sources_df, refresh_worms_cache = FALSE)
+parse_dna_diet(
+  filename,
+  dbh,
+  existing_names,
+  worms_cache_directory = NULL,
+  verbosity = 1,
+  data_df,
+  sources_df,
+  refresh_worms_cache = FALSE
+)
 }
 \arguments{
 \item{filename}{string: path to Excel file}
 
 \item{dbh}{optional: database handle}
+
+\item{existing_names}{character: vector of existing taxon names}
 
 \item{worms_cache_directory}{string: path to cache directory for taxonomic data}
 

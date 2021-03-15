@@ -4,13 +4,21 @@
 \alias{parse_isotopes}
 \title{Parse isotopes data spreadsheet}
 \usage{
-parse_isotopes(filename, dbh, worms_cache_directory = NULL,
-  verbosity = 1, refresh_worms_cache = FALSE)
+parse_isotopes(
+  filename,
+  dbh,
+  existing_names,
+  worms_cache_directory = NULL,
+  verbosity = 1,
+  refresh_worms_cache = FALSE
+)
 }
 \arguments{
 \item{filename}{string: path to Excel file}
 
 \item{dbh}{optional: database handle}
+
+\item{existing_names}{character: vector of existing taxon names}
 
 \item{worms_cache_directory}{string: path to cache directory for taxonomic data}
 

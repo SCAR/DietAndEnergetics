@@ -4,11 +4,20 @@
 \alias{search_worms}
 \title{Search for valid names}
 \usage{
-search_worms(scientific = NULL, common = NULL, ids = NULL,
-  force = FALSE, follow_valid = TRUE, like = FALSE,
-  try_fuzzy = FALSE, cache_directory, acceptable_status = c("accepted",
-  "nomen dubium", "temporary name"), follow = c("unaccepted",
-  "alternate representation"), filter = NULL, ...)
+search_worms(
+  scientific = NULL,
+  common = NULL,
+  ids = NULL,
+  force = FALSE,
+  follow_valid = TRUE,
+  like = FALSE,
+  try_fuzzy = FALSE,
+  cache_directory,
+  acceptable_status = c("accepted", "nomen dubium", "temporary name"),
+  follow = c("unaccepted", "alternate representation"),
+  filter = NULL,
+  ...
+)
 }
 \arguments{
 \item{scientific}{string: scientific name. This may also include special filters like \code{"Ctenophora@phylum:Ctenophora"} or \code{"Lumbricidae@marine_only:FALSE"}, see examples below}
