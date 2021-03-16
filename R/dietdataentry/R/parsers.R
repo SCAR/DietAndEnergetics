@@ -97,7 +97,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     if (!file.exists(filename)) stop("file ", filename, " does not exist")
 
     ## start with sources
-    sources <- parse_sources(filename, verbosity)
+    sources <- parse_sources(filename, verbosity = verbosity)
 
     ## data sheet
     sheets <- excel_sheets(filename)
@@ -306,7 +306,7 @@ parse_isotopes <- function(filename,dbh,existing_names,worms_cache_directory = N
     if (missing(existing_names)) existing_names <- c()
 
     ## start with sources
-    sources <- parse_sources(filename,verbosity)
+    sources <- parse_sources(filename, verbosity = verbosity)
     valid_source_ids <- sources$sources$source_id
 
     ## isotopes data sheet
@@ -519,7 +519,7 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
     if (missing(existing_names)) existing_names <- c()
 
     ## start with sources
-    sources <- parse_sources(if (!missing(sources_df)) sources_df else filename, verbosity)
+    sources <- parse_sources(if (!missing(sources_df)) sources_df else filename, verbosity = verbosity)
     valid_source_ids <- sources$sources$source_id
 
     ## dna diet data sheet
@@ -758,7 +758,7 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
     if (missing(existing_names)) existing_names <- c()
 
     ## start with sources
-    sources <- parse_sources(filename, verbosity)
+    sources <- parse_sources(filename, verbosity = verbosity)
     valid_source_ids <- sources$sources$source_id
 
     ## diet data sheet
@@ -985,14 +985,15 @@ check_sheet_columns <- function(names_provided, sheet_type) {
     assert_that(is.string(sheet_type))
     sheet_type <- match.arg(tolower(sheet_type), c("diet", "dna_diet", "isotopes", "energetics", "sources", "lipids"))
     expected <- switch(sheet_type,
-                       diet = c("source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "revised_predator_name", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id", "prey_name", "revised_prey_name", "prey_is_aggregate", "prey_life_stage", "prey_sex", "prey_sample_count", "prey_size_min", "prey_size_max", "prey_size_mean", "prey_size_sd", "prey_size_units", "prey_size_notes", "prey_mass_min", "prey_mass_max", "prey_mass_mean", "prey_mass_sd", "prey_mass_units", "prey_mass_notes", "fraction_diet_by_weight", "fraction_diet_by_prey_items", "fraction_occurrence", "prey_items_included", "accumulated_hard_parts_treatment", "qualitative_dietary_importance", "consumption_rate_min", "consumption_rate_max", "consumption_rate_mean", "consumption_rate_sd", "consumption_rate_units", "consumption_rate_notes", "identification_method", "is_dodgy", "is_secondary_data", "is_public", "entered_by", "notes"),
-                       isotopes = c("source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "taxon_name", "revised_taxon_name", "taxon_life_stage", "taxon_breeding_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "taxon_size_min", "taxon_size_max", "taxon_size_mean", "taxon_size_sd", "taxon_size_units", "taxon_size_notes", "taxon_mass_min", "taxon_mass_max", "taxon_mass_mean", "taxon_mass_sd", "taxon_mass_units", "taxon_mass_notes", "delta_13C_mean", "delta_13C_variability_value", "delta_13C_variability_type", "delta_15N_mean", "delta_15N_variability_value", "delta_15N_variability_type", "C_N_ratio_mean", "C_N_ratio_variability_value", "C_N_ratio_variability_type", "C_N_ratio_type", "isotopes_pretreatment", "isotopes_are_adjusted", "isotopes_adjustment_notes", "isotopes_carbonates_treatment", "isotopes_lipids_treatment", "isotopes_body_part_used", "is_dodgy", "is_secondary_data", "is_public", "entered_by", "notes", "delta_34S_mean", "delta_34S_variability_value", "delta_34S_variability_type",
-                         "delta_15N_glutamic_acid_mean", "delta_15N_glutamic_acid_variability_value", "delta_15N_glutamic_acid_variability_type",
-                         "delta_15N_phenylalanine_mean", "delta_15N_phenylalanine_variability_value", "delta_15N_phenylalanine_variability_type"),
-                       dna_diet = c("source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "revised_predator_name", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "prey_name", "revised_prey_name", "prey_is_aggregate", "sequences_total", "DNA_concentration", "fraction_sequences_by_prey", "fraction_occurrence", "sample_type", "DNA_extraction_method", "analysis_type", "sequencing_platform", "target_gene", "target_food_group", "forward_primer", "reverse_primer", "blocking_primer", "primer_source_id", "sequence_source_id", "sequence", "other_methods_applied", "qualitative_dietary_importance", "is_dodgy", "is_secondary_data", "is_public", "entered_by", "notes"),
-                       sources = c("source_id", "details", "source_notes", "doi", "citation"),
-                       energetics = c("source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "observation_date_notes", "taxon_name", "revised_taxon_name", "taxon_life_stage", "taxon_breeding_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "body_part_used", "measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_dodgy", "is_secondary_data", "is_public", "entered_by", "notes"),
-                       lipids = c("source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "observation_date_notes", "taxon_name", "revised_taxon_name", "taxon_life_stage", "taxon_breeding_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "body_part_used", "measurement_name", "measurement_class", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_dodgy", "is_secondary_data", "is_public", "entered_by", "notes"),
+                       diet =,
+                       dna_diet =,
+                       isotopes =,
+                       lipids =,
+                       energetics =,
+                       sources = {
+                           this_schema <- jsonlite::fromJSON(system.file(file.path("extdata", "schema", paste0(sheet_type, ".json"))))
+                           names(this_schema)[vapply(this_schema, function(z) z$expected, FUN.VALUE = TRUE)]
+                       },
                        stop("expected columns for sheet_type ", sheet_type, " not coded yet")
                        )
     if (!all(expected %in% names_provided)) stop("columns missing from spreadsheet: ", paste(setdiff(expected, names_provided), collapse = ", "))
@@ -1003,15 +1004,12 @@ check_sheet_columns <- function(names_provided, sheet_type) {
 columns_order <- function(data_type) {
     data_type <- match.arg(tolower(data_type), c("diet", "dna_diet", "isotopes", "energetics", "sources", "lipids"))
     out <- switch(data_type,
-                  diet = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "predator_name_original", "revised_predator_name", "predator_aphia_id", "predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus", "predator_group_soki", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id", "prey_name", "prey_name_original", "revised_prey_name", "prey_aphia_id", "prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus", "prey_group_soki", "prey_is_aggregate", "prey_life_stage", "prey_sex", "prey_sample_count", "prey_size_min", "prey_size_max", "prey_size_mean", "prey_size_sd", "prey_size_units", "prey_size_notes", "prey_mass_min", "prey_mass_max", "prey_mass_mean", "prey_mass_sd", "prey_mass_units", "prey_mass_notes", "fraction_diet_by_weight", "fraction_diet_by_prey_items", "fraction_occurrence", "prey_items_included", "accumulated_hard_parts_treatment", "qualitative_dietary_importance", "consumption_rate_min", "consumption_rate_max", "consumption_rate_mean", "consumption_rate_sd", "consumption_rate_units", "consumption_rate_notes", "identification_method", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
-                  isotopes = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "observation_date_start", "observation_date_end", "altitude_min", "altitude_max", "depth_min", "depth_max", "taxon_name", "taxon_name_original", "revised_taxon_name", "taxon_aphia_id", "taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus", "taxon_group_soki", "taxon_group", "taxon_breeding_stage", "taxon_life_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "taxon_size_min", "taxon_size_max", "taxon_size_mean", "taxon_size_sd", "taxon_size_units", "taxon_size_notes", "taxon_mass_min", "taxon_mass_max", "taxon_mass_mean", "taxon_mass_sd", "taxon_mass_units", "taxon_mass_notes", "delta_13C_mean", "delta_13C_variability_value", "delta_13C_variability_type", "delta_15N_mean", "delta_15N_variability_value", "delta_15N_variability_type", "delta_34S_mean", "delta_34S_variability_value", "delta_34S_variability_type", "C_N_ratio_mean", "C_N_ratio_variability_value", "C_N_ratio_variability_type", "C_N_ratio_type",
-                               "delta_15N_glutamic_acid_mean", "delta_15N_glutamic_acid_variability_value", "delta_15N_glutamic_acid_variability_type",
-                               "delta_15N_phenylalanine_mean", "delta_15N_phenylalanine_variability_value", "delta_15N_phenylalanine_variability_type",
-                               "isotopes_pretreatment", "isotopes_are_adjusted", "isotopes_adjustment_notes", "isotopes_carbonates_treatment", "isotopes_lipids_treatment", "isotopes_body_part_used", "measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_secondary_data", "is_dodgy", "quality_flag", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
-                  dna_diet = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "predator_name", "predator_name_original", "revised_predator_name", "predator_aphia_id", "predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus", "predator_group_soki", "predator_life_stage", "predator_breeding_stage", "predator_sex", "predator_sample_count", "predator_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "prey_name", "prey_name_original", "revised_prey_name", "prey_aphia_id", "prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus", "prey_group_soki", "prey_is_aggregate", "sequences_total", "DNA_concentration", "fraction_sequences_by_prey", "fraction_occurrence", "sample_type", "DNA_extraction_method", "analysis_type", "sequencing_platform", "target_gene", "target_food_group", "forward_primer", "reverse_primer", "blocking_primer", "primer_source_id", "sequence_source_id", "sequence", "other_methods_applied", "qualitative_dietary_importance", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
-                  sources = c("source_id", "details", "doi", "source_notes", "notes", "citation", "date_created"),
-                  lipids = ,
-                  energetics = c("record_id", "source_id", "original_record_id", "location", "west", "east", "south", "north", "altitude_min", "altitude_max", "depth_min", "depth_max", "observation_date_start", "observation_date_end", "observation_date_notes", "taxon_name", "revised_taxon_name", "taxon_name_original", "taxon_aphia_id", "taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus", "taxon_group_soki", "taxon_group", "taxon_life_stage", "taxon_breeding_stage", "taxon_sex", "taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count", "samples_were_pooled", "body_part_used", "measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method", "is_dodgy", "quality_flag", "is_secondary_data", "is_public", "is_public_flag", "entered_by", "notes", "last_modified"),
+                  diet =,
+                  dna_diet =,
+                  isotopes =,
+                  lipids =,
+                  energetics =,
+                  sources = names(jsonlite::fromJSON(system.file(file.path("extdata", "schema", paste0(data_type, ".json"))))),
                   stop("column ordering for data type ", data_type, " not coded yet")
                   )
     if (data_type == "lipids") {

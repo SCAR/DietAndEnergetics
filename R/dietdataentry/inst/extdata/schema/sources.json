@@ -1,0 +1,9 @@
+{
+    "source_id" : {"expected" : true, "type" : "integer"},
+    "details" : {"expected" : true, "type" : "character"},
+    "doi" : {"expected" : true, "type" : "character"},
+    "source_notes" : {"expected" : true, "type" : "character"},
+    "notes" : {"expected" : false, "type" : "character"},
+    "citation" : {"expected" : true, "type" : "character"},
+    "date_created" : {"expected" : false, "type" : "datetime"}
+}

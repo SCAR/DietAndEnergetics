@@ -13,6 +13,7 @@ LazyData: true
 Imports:
   assertthat,
   httr,
+  jsonlite,
   lubridate,
   readr,
   R.cache,
