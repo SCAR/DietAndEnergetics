@@ -17,3 +17,12 @@ test_that("isotopes data parser works", {
     expect_is(x$sources, "data.frame")
     expect_is(x$records, "data.frame")
 })
+
+test_that("lipids data parser works", {
+    filename <- system.file("extdata/example_lipids_data.xls", package = "dietdataentry")
+    x <- parse_lipids(filename)
+    expect_is(x, "list")
+    expect_named(x, c("sources", "records", "raw"))
+    expect_is(x$sources, "data.frame")
+    expect_is(x$records, "data.frame")
+})
