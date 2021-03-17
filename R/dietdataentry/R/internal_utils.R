@@ -1,5 +1,7 @@
 `%eq%` <- function(x, y) !is.na(x) & !is.na(y) & x==y
 
+cat0 <- function(...) cat(..., sep = "")
+
 is_nonempty <- function(z) if (is.null(z)) FALSE else !is.na(z) & (!is.character(z) | nchar(z)>0)
 
 nonempty_or_unknown <- function(z) if (is_nonempty(z)) z else "unknown"
@@ -52,4 +54,18 @@ get_existing_names <- function(dbh) {
     } else {
         c()
     }
+}
+
+format_datecol <- function(z) {
+    ## z should be a column from a data.frame
+    if (inherits(z, "character")) {
+        ## parse
+        warning("need to check parsing of text date data into dates")
+        z <- ymd(z)
+    } else if (inherits(z, c("POSIXct", "POSIXlt"))) {
+        ## ok, all good
+    } else {
+        stop("unexpected class ", class(z), " passed to format_datecol")
+    }
+    z
 }

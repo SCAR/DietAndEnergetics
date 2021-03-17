@@ -5,6 +5,8 @@ test_that("diet data parser works", {
     expect_warning(x <- parse_diet(filename))
     expect_is(x, "list")
     expect_named(x, c("sources", "records", "raw"))
+    expect_is(x$sources, "data.frame")
+    expect_is(x$records, "data.frame")
 })
 
 test_that("isotopes data parser works", {
@@ -12,4 +14,6 @@ test_that("isotopes data parser works", {
     expect_warning(x <- parse_isotopes(filename), "unmatched names: Eudyptes chrysocome filholi")
     expect_is(x, "list")
     expect_named(x, c("sources", "records", "raw"))
+    expect_is(x$sources, "data.frame")
+    expect_is(x$records, "data.frame")
 })
