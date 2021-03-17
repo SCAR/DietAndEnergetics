@@ -68,7 +68,7 @@ tt_lookup <- function(nm, taxon_table, which = "name") {
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_energetics <- function(filename, dbh, worms_cache_directory = NULL, verbosity=1, refresh_worms_cache = FALSE) {
+parse_energetics <- function(filename, dbh, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
     doparse("energetics", filename = filename, dbh = dbh, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
 }
 
@@ -226,9 +226,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
         if (is_nonempty(r$measurement_variability_value[lidx]) && !is_nonempty(r$measurement_variability_type[lidx])) warning("empty measurement_variability_type at row", lidx)
         dcols <- c("measurement_name", "measurement_min_value", "measurement_max_value", "measurement_mean_value", "measurement_variability_value", "measurement_variability_type", "measurement_units", "measurement_method")
         if (dtype == "lipids") dcols <- c(dcols, "measurement_class")
-        for (blah in dcols) {
-            temp_insert[[blah]] <- r[lidx, blah]
-        }
+        for (blah in dcols) temp_insert[[blah]] <- r[lidx, blah]
         processed_cols <- c(processed_cols, dcols)
 
         ## source_id
@@ -253,7 +251,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
         temp <- setdiff(processed_cols, c(names(r), "taxon_aphia_id"))
         if (length(temp) > 0) stop("processed columns that apparently don't exist in the spreadsheet: ", paste(temp, collapse = ", "))
 
-        all_records <- if (length(all_records) < 1) list(temp_insert) else c(all_records, list(temp_insert))
+        all_records <- c(all_records, list(temp_insert))
     }
     if (verbosity > 0) cat(length(all_records), "data records parsed.\n")
     ## to data frame
@@ -450,7 +448,7 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
         temp <- setdiff(processed_cols, c(names(r), "taxon_aphia_id"))
         if (length(temp) > 0) stop("processed columns that apparently don't exist in the spreadsheet: ", paste(temp, collapse = ", "))
 
-        all_records <- if (length(all_records) < 1) list(temp_insert) else c(all_records, list(temp_insert))
+        all_records <- c(all_records, list(temp_insert))
     }
     if (verbosity > 0) cat(length(all_records), "isotope data records parsed.\n")
     ## to data frame
@@ -477,7 +475,7 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = NULL,verbosity=1,data_df,sources_df,refresh_worms_cache=FALSE) {
+parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory = NULL, verbosity = 1, data_df, sources_df, refresh_worms_cache = FALSE) {
     ## check inputs
     if (!missing(dbh)) assert_that(inherits(dbh, c("JDBCConnection", "OdbcConnection")))
     if (!missing(filename) && !file.exists(filename)) stop("file ", filename, " does not exist")
@@ -501,7 +499,7 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
             warning("could not find worksheet named \"DNA\", using the first worksheet (\"", sheets[1], "\")")
             this_sheet <- sheets[1]
         }
-        r <- as.data.frame(read_excel(filename,sheet=this_sheet), stringsAsFactors = FALSE)
+        r <- as.data.frame(read_excel(filename, sheet = this_sheet), stringsAsFactors = FALSE)
     }
     raw_r <- r
 
@@ -514,7 +512,7 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
 
     ## basic error checking
     ## check column names
-    check_sheet_columns(names(r),"dna_diet")
+    check_sheet_columns(names(r), "dna_diet")
 
     if (any(is.na(r$predator_sample_id))) stop("missing at least one predator_sample_id")
     if (is.character(r$predator_sample_id)) {
@@ -524,10 +522,10 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
     if (any(!is_nonempty(r$entered_by))) stop("missing at least one entered_by entry")
 
     ## convert date columns, if needed, and format
-    for (datecol in c("observation_date_start","observation_date_end")) r[, datecol] <- format_datecol(r[, datecol])
+    for (datecol in c("observation_date_start", "observation_date_end")) r[, datecol] <- format_datecol(r[, datecol])
 
     ## force lower case for various columns
-    force_lc <- c("predator_life_stage","predator_breeding_stage","qualitative_dietary_importance","predator_size_notes","predator_mass_notes","predator_sex","sample_type","analysis_type","target_food_group") ##,"other_methods_applied"?
+    force_lc <- c("predator_life_stage", "predator_breeding_stage", "qualitative_dietary_importance", "predator_size_notes", "predator_mass_notes", "predator_sex", "sample_type", "analysis_type", "target_food_group") ##,"other_methods_applied"?
     for (k in force_lc) r[, k] <- tolower(r[, k])
 
     force_uc <- c("sequence")
@@ -535,7 +533,7 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
 
     ## check unique values in columns with controlled vocabularies
     if (verbosity > 0) cat("Checking controlled vocabularies ...\n")
-    controlled_cols=c("predator_life_stage","predator_sex","predator_breeding_stage","predator_size_units","predator_mass_units","qualitative_dietary_importance","predator_size_notes","predator_mass_notes","sample_type","DNA_extraction_method","analysis_type","sequencing_platform","target_gene","target_food_group") ##"sequence_source_id"? ,"other_methods_applied" probably not controlled
+    controlled_cols <- c("predator_life_stage", "predator_sex", "predator_breeding_stage", "predator_size_units", "predator_mass_units", "qualitative_dietary_importance", "predator_size_notes", "predator_mass_notes", "sample_type", "DNA_extraction_method", "analysis_type", "sequencing_platform", "target_gene", "target_food_group") ##"sequence_source_id"? ,"other_methods_applied" probably not controlled
     ## TODO: "forward_primer","reverse_primer","blocking_primer"
     for (k in controlled_cols) checkvals(r[, k], k)
     if (verbosity > 0) cat("done.\n")
@@ -545,13 +543,13 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
 
     ## first parse all taxa
     ru <- unique(r[, c("predator_name", "revised_predator_name")])
-    temp <- check_names(ru$predator_name,ru$revised_predator_name,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
+    temp <- check_names(ru$predator_name, ru$revised_predator_name, existing_names = existing_names, cache_directory = worms_cache_directory, verbosity = verbosity, force = refresh_worms_cache)
     unmatched_names <- temp$unmatched_names
     taxon_table <- temp$taxon_table
     ru <- unique(r[, c("prey_name", "revised_prey_name")])
-    temp <- check_names(ru$prey_name,ru$revised_prey_name,existing_table=taxon_table,existing_names=existing_names,cache_directory=worms_cache_directory,verbosity=verbosity,force=refresh_worms_cache)
-    unmatched_names <- sort(unique(c(unmatched_names,temp$unmatched_names)))
-    taxon_table <- unique(rbind(taxon_table,temp$taxon_table))
+    temp <- check_names(ru$prey_name, ru$revised_prey_name, existing_table = taxon_table, existing_names = existing_names, cache_directory = worms_cache_directory, verbosity = verbosity, force = refresh_worms_cache)
+    unmatched_names <- sort(unique(c(unmatched_names, temp$unmatched_names)))
+    taxon_table <- unique(rbind(taxon_table, temp$taxon_table))
 
     if (verbosity > 0) cat("\n")
     ## iterate through rows of r, parsing each record
@@ -563,53 +561,51 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
         temppred <- tidy_name(temppred)
         tempprey <- tidy_name(tempprey)
         if (verbosity > 1) cat0("adding ", tt_lookup(temppred, taxon_table)$resolved_name, " -> ", tt_lookup(tempprey, taxon_table)$resolved_name, "\n")
-        temp_insert <- list(predator_name=tt_lookup(temppred, taxon_table)$resolved_name)
+        temp_insert <- list(predator_name = tt_lookup(temppred, taxon_table)$resolved_name)
         temp_insert$predator_name_original <- strip_name_specials(if (is_nonempty(r$revised_predator_name[lidx]) && is_nonempty(r$predator_name[lidx])) r$predator_name[lidx] else temppred)
         this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
-        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$predator_aphia_id <- this_aphia
-        processed_cols <- c(processed_cols,c("predator_name","revised_predator_name","predator_aphia_id"))
+        temp_insert$predator_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        processed_cols <- c(processed_cols, c("predator_name", "revised_predator_name", "predator_aphia_id"))
         ## some fairly straightforward ones
         ## re-add "predator_group_soki" once repopulated
-        for (blah in c("original_record_id","predator_life_stage","predator_breeding_stage","predator_sample_count","predator_size_min","predator_size_max","predator_size_mean","predator_size_sd","predator_size_units","predator_size_notes","predator_mass_min","predator_mass_max","predator_mass_mean","predator_mass_sd","predator_mass_units","predator_mass_notes","predator_sample_id","physical_sample_id","analytical_replicate_id","analytical_replicate_count")) {
-            temp <- r[lidx,blah]
-            processed_cols <- c(processed_cols,blah)
-            if (is.na(temp)) next
-            if (blah %in% c("predator_life_stage","predator_breeding_stage")) temp <- gsub(", ",",",temp)
-            if (grepl("/",temp) && grepl("stage",blah)) stop("predator life_stage/breeding_stage col contains / as separator?")
+        for (blah in c("original_record_id", "predator_life_stage", "predator_breeding_stage", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count")) {
+            temp <- r[lidx, blah]
+            if (blah %in% c("predator_life_stage", "predator_breeding_stage")) temp <- gsub(", ", ",", temp)
+            if (grepl("/", temp) && grepl("stage", blah)) stop("predator life_stage/breeding_stage col contains / as separator?")
             temp_insert[[blah]] <- temp
+            processed_cols <- c(processed_cols, blah)
         }
 
         temp_insert$predator_sex <- nonempty_or_unknown(r$predator_sex[lidx])
-        processed_cols <- c(processed_cols,"predator_sex")
+        processed_cols <- c(processed_cols, "predator_sex")
 
         temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
         temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) && is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
         this_aphia <- tt_lookup(tempprey, taxon_table)$aphia_id
-        if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) temp_insert$prey_aphia_id <- this_aphia
-        processed_cols <- c(processed_cols,c("prey_name","revised_prey_name","prey_aphia_id"))
+        temp_insert$prey_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        processed_cols <- c(processed_cols, c("prey_name", "revised_prey_name", "prey_aphia_id"))
         if (is.null(temp_insert$prey_name) || is.na(temp_insert$prey_name) || nchar(temp_insert$prey_name)<1) warning("empty prey_name at row ", lidx)
 
         ## re-add "prey_group_soki" once repopulated
         for (blah in c("prey_is_aggregate")) {
-            temp <- r[lidx,blah]
-            processed_cols <- c(processed_cols,blah)
-            if (is.na(temp)) next
-            if (blah=="prey_is_aggregate") {
-                ## needs to be VARCHAR
-                if (is.na(temp)) stop("this should not happen")
-                temp <- flag_to_yes_no(parse_flag(temp))
+            temp <- r[lidx, blah]
+            processed_cols <- c(processed_cols, blah)
+            if (is.na(temp)) {
+                temp_insert[[blah]] <- NA
+            } else {
+                if (blah == "prey_is_aggregate") temp <- flag_to_yes_no(parse_flag(temp))
+                temp_insert[[blah]] <- temp
             }
-            temp_insert[[blah]] <- temp
         }
 
         ## dates
-        if (!is.na(r$observation_date_start[lidx])) temp_insert$observation_date_start <- r$observation_date_start[lidx]
-        if (!is.na(r$observation_date_end[lidx])) temp_insert$observation_date_end <- r$observation_date_end[lidx]
-        processed_cols <- c(processed_cols,c("observation_date_start","observation_date_end"))
+        temp_insert$observation_date_start <- r$observation_date_start[lidx]
+        temp_insert$observation_date_end <- r$observation_date_end[lidx]
+        processed_cols <- c(processed_cols, c("observation_date_start", "observation_date_end"))
 
         ## location
         this_location <- tidy_name(r$location[lidx])
-        if (is_nonempty(this_location)) temp_insert$location <- this_location
+        temp_insert$location <- this_location
         if (!is.na(r$south[lidx]) && abs(r$south[lidx]) > 90) stop("location south on line ", lidx, " is beyond 90 (", r$south[lidx], ")")
         temp_insert$south <- r$south[lidx]
         temp_insert$west <- deg_normalise(r$west[lidx])
@@ -620,51 +616,38 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
         }
         temp_insert$north <- r$north[lidx]
         temp_insert$east <- deg_normalise(r$east[lidx])
-        processed_cols <- c(processed_cols,c("location","east","west","south","north"))
+        processed_cols <- c(processed_cols, c("location", "east", "west", "south", "north"))
         ## altitude
         if (!is.na(r$altitude_min[lidx]) && !is.na(r$altitude_max[lidx]) && r$altitude_min[lidx]>r$altitude_max[lidx]) stop("altitude_min (", r$altitude_min[lidx], ") is greater than altitude_max (", r$altitude_max[lidx], ") on line ", lidx)
-        if (!is.na(r$altitude_min[lidx])) temp_insert$altitude_min <- r$altitude_min[lidx]
-        if (!is.na(r$altitude_max[lidx])) temp_insert$altitude_max <- r$altitude_max[lidx]
-        processed_cols <- c(processed_cols,c("altitude_min","altitude_max"))
+        temp_insert$altitude_min <- r$altitude_min[lidx]
+        temp_insert$altitude_max <- r$altitude_max[lidx]
+        processed_cols <- c(processed_cols, c("altitude_min", "altitude_max"))
         ## depth
         tempmin <- abs(r$depth_min[lidx])
         tempmax <- abs(r$depth_max[lidx])
         if (!is.na(tempmin) && !is.na(tempmax) && tempmin > tempmax) stop("depth_min (", tempmin, ") is greater than depth_max (", tempmax, ") on line ", lidx)
-        if (!is.na(tempmin)) temp_insert$depth_min <- tempmin
-        if (!is.na(tempmax)) temp_insert$depth_max <- tempmax
-        processed_cols <- c(processed_cols,c("depth_min","depth_max"))
+        temp_insert$depth_min <- tempmin
+        temp_insert$depth_max <- tempmax
+        processed_cols <- c(processed_cols, c("depth_min", "depth_max"))
 
-        ## methodological stuff
-        for (blah in c("sample_type","DNA_extraction_method","analysis_type","sequencing_platform","target_gene","target_food_group","forward_primer","reverse_primer","blocking_primer","primer_source_id","sequence_source_id","sequence","other_methods_applied")) {
-            if (is_nonempty(blah)) temp_insert[[blah]] <- r[lidx,blah]
-            processed_cols <- c(processed_cols,blah)
-        }
-
-        ## diet measures
-        for (blah in c("sequences_total","DNA_concentration","fraction_sequences_by_prey","fraction_occurrence")) {
-            if (!is.na(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
-            processed_cols <- c(processed_cols,blah)
-        }
-
-        for (blah in c("qualitative_dietary_importance")) {
-            if (is_nonempty(r[lidx,blah])) temp_insert[[blah]] <- r[lidx,blah]
-            processed_cols <- c(processed_cols,blah)
-        }
+        ## methodological stuff, diet measures
+        mcols <- c("sample_type", "DNA_extraction_method", "analysis_type", "sequencing_platform", "target_gene", "target_food_group", "forward_primer", "reverse_primer", "blocking_primer", "primer_source_id", "sequence_source_id", "sequence", "other_methods_applied", "sequences_total", "DNA_concentration", "fraction_sequences_by_prey", "fraction_occurrence", "qualitative_dietary_importance")
+        for (blah in mcols) temp_insert[[blah]] <- r[lidx, blah]
+        processed_cols <- c(processed_cols, mcols)
 
         ## source_id
         this_source_id <- r$source_id[lidx]
         if (is.na(this_source_id)) warning("row ", lidx, " is missing source_id")
         if (!this_source_id %in% valid_source_ids) warning("row ", lidx, " has source_id ", this_source_id, ", which does not match the sources sheet")
         temp_insert$source_id <- this_source_id
-        processed_cols <- c(processed_cols,"source_id")
+        processed_cols <- c(processed_cols, "source_id")
 
         ## quality and other flags
-        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx],lidx)
+        temp_insert$quality_flag <- parse_quality_flag(r$is_dodgy[lidx], lidx)
         temp_insert$entered_by <- r$entered_by[lidx]
-        is_sec <- parse_flag(r$is_secondary_data[lidx],treat_empty_as=FALSE)
-        temp_insert$is_secondary_data <- flag_to_yes_no(is_sec)
-        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx],treat_empty_as=TRUE))
-        processed_cols <- c(processed_cols,c("is_dodgy","entered_by","is_secondary_data","is_public"))
+        temp_insert$is_secondary_data <- flag_to_yes_no(parse_flag(r$is_secondary_data[lidx], treat_empty_as = FALSE))
+        temp_insert$is_public_flag <- flag_to_yes_no(parse_flag(r$is_public[lidx], treat_empty_as = TRUE))
+        processed_cols <- c(processed_cols, c("is_dodgy", "entered_by", "is_secondary_data", "is_public"))
 
         ## notes
         temp_insert$notes <- r$notes[lidx]
@@ -674,15 +657,16 @@ parse_dna_diet <- function(filename,dbh,existing_names,worms_cache_directory = N
 
         ##cat(str(temp_insert))
         if (!all(names(r) %in% processed_cols)) stop("unprocessed columns: ", paste(setdiff(names(r), processed_cols), collapse = ", "))
-        temp <- setdiff(processed_cols,c(names(r),c("predator_aphia_id","prey_aphia_id")))
-        if (length(temp)>0) stop("processed columns that apparently don't exist in the spreadsheet: ", paste(temp, collapse = ", "))
+        temp <- setdiff(processed_cols, c(names(r), c("predator_aphia_id", "prey_aphia_id")))
+        if (length(temp) > 0) stop("processed columns that apparently don't exist in the spreadsheet: ", paste(temp, collapse = ", "))
 
-        all_records <- if (length(all_records)<1) list(temp_insert) else c(all_records,list(temp_insert))
+        all_records <- c(all_records, list(temp_insert))
     }
-    cat(length(all_records),"diet data records parsed.\n")
-    if (length(unmatched_names)>0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
+    all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
+    if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
 
-    list(sources=sources$sources,records=all_records,raw=list(sources=sources$raw,records=raw_r))
+    list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
 
 #' Parse diet data spreadsheet
@@ -878,15 +862,9 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         processed_cols <- c(processed_cols, "identification_method")
 
         ## diet measures
-        for (blah in c("fraction_diet_by_weight", "fraction_diet_by_prey_items", "fraction_occurrence")) {
-            temp_insert[[blah]] <- r[lidx, blah]
-            processed_cols <- c(processed_cols, blah)
-        }
-
-        for (blah in c("qualitative_dietary_importance", "consumption_rate_min", "consumption_rate_max", "consumption_rate_mean", "consumption_rate_sd", "consumption_rate_units", "consumption_rate_notes")) {
-            temp_insert[[blah]] <- r[lidx, blah]
-            processed_cols <- c(processed_cols, blah)
-        }
+        mcols <- c("fraction_diet_by_weight", "fraction_diet_by_prey_items", "fraction_occurrence", "qualitative_dietary_importance", "consumption_rate_min", "consumption_rate_max", "consumption_rate_mean", "consumption_rate_sd", "consumption_rate_units", "consumption_rate_notes")
+        for (blah in mcols) temp_insert[[blah]] <- r[lidx, blah]
+        processed_cols <- c(processed_cols, mcols)
 
         temp_insert$prey_items_included <- nonempty_or_unknown(r$prey_items_included[lidx])
         processed_cols <- c(processed_cols, "prey_items_included")
