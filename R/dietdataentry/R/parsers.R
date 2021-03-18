@@ -162,8 +162,14 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
         if (verbosity > 1) cat0("adding ", tt_lookup(temppred, taxon_table)$resolved_name, ": ", r$measurement_name[lidx], "\n")
         temp_insert <- list(taxon_name = tt_lookup(temppred, taxon_table)$resolved_name)
         temp_insert$taxon_name_original <- strip_name_specials(if (is_nonempty(r$revised_taxon_name[lidx]) && is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred)
-        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
-        temp_insert$taxon_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        this_tax <- tt_lookup(temppred, taxon_table)
+        if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+            temp_insert$taxon_aphia_id <- this_tax$aphia_id
+            for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("taxon_", tcol)]] <- this_tax[[tcol]]
+        } else {
+            temp_insert$taxon_aphia_id <- NA_integer_
+            for (tcol in c("taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus")) temp_insert[[tcol]] <- NA_character_
+        }
         processed_cols <- c(processed_cols, c("taxon_name", "revised_taxon_name", "taxon_aphia_id"))
         ## some fairly straightforward ones
         ## re-add taxon_group_soki once populated
@@ -260,6 +266,10 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
     cat(paste(format(temp), collapse = ", "))
+
+    cord <- columns_order(dtype)
+    if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
+    all_records <- all_records[, intersect(cord, names(all_records))]
 
     list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
@@ -365,8 +375,14 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
         if (verbosity > 1) cat0("adding ", tt_lookup(temppred, taxon_table)$resolved_name, "\n")
         temp_insert <- list(taxon_name = tt_lookup(temppred, taxon_table)$resolved_name)
         temp_insert$taxon_name_original <- strip_name_specials(if (is_nonempty(r$revised_taxon_name[lidx]) && is_nonempty(r$taxon_name[lidx])) r$taxon_name[lidx] else temppred)
-        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
-        temp_insert$taxon_aphia_id <- if (!is.null(this_aphia) && length(this_aphia) == 1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        this_tax <- tt_lookup(temppred, taxon_table)
+        if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+            temp_insert$taxon_aphia_id <- this_tax$aphia_id
+            for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("taxon_", tcol)]] <- this_tax[[tcol]]
+        } else {
+            temp_insert$taxon_aphia_id <- NA_integer_
+            for (tcol in c("taxon_worms_rank", "taxon_worms_kingdom", "taxon_worms_phylum", "taxon_worms_class", "taxon_worms_order", "taxon_worms_family", "taxon_worms_genus")) temp_insert[[tcol]] <- NA_character_
+        }
         processed_cols <- c(processed_cols, c("taxon_name", "revised_taxon_name", "taxon_aphia_id"))
         ## some fairly straightforward ones
         ## re-add taxon_group_soki once populated
@@ -457,6 +473,10 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
     cat(paste(format(temp), collapse = ", "))
+
+    cord <- columns_order("isotopes")
+    if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
+    all_records <- all_records[, intersect(cord, names(all_records))]
 
     list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
@@ -563,8 +583,14 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
         if (verbosity > 1) cat0("adding ", tt_lookup(temppred, taxon_table)$resolved_name, " -> ", tt_lookup(tempprey, taxon_table)$resolved_name, "\n")
         temp_insert <- list(predator_name = tt_lookup(temppred, taxon_table)$resolved_name)
         temp_insert$predator_name_original <- strip_name_specials(if (is_nonempty(r$revised_predator_name[lidx]) && is_nonempty(r$predator_name[lidx])) r$predator_name[lidx] else temppred)
-        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
-        temp_insert$predator_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        this_tax <- tt_lookup(temppred, taxon_table)
+        if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+            temp_insert$predator_aphia_id <- this_tax$aphia_id
+            for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("predator_", tcol)]] <- this_tax[[tcol]]
+        } else {
+            temp_insert$predator_aphia_id <- NA_integer_
+            for (tcol in c("predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus")) temp_insert[[tcol]] <- NA_character_
+        }
         processed_cols <- c(processed_cols, c("predator_name", "revised_predator_name", "predator_aphia_id"))
         ## some fairly straightforward ones
         ## re-add "predator_group_soki" once repopulated
@@ -578,11 +604,24 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
 
         temp_insert$predator_sex <- nonempty_or_unknown(r$predator_sex[lidx])
         processed_cols <- c(processed_cols, "predator_sex")
-
-        temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
-        temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) && is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
-        this_aphia <- tt_lookup(tempprey, taxon_table)$aphia_id
-        temp_insert$prey_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        if (is_nonempty(tempprey)) {
+            temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
+            temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) && is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
+            this_tax <- tt_lookup(tempprey, taxon_table)
+            if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+                temp_insert$prey_aphia_id <- this_tax$aphia_id
+                for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("prey_", tcol)]] <- this_tax[[tcol]]
+            } else {
+                temp_insert$prey_aphia_id <- NA_integer_
+                for (tcol in c("prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus")) temp_insert[[tcol]] <- NA_character_
+            }
+        } else {
+            warning("empty prey_name at row ", lidx)
+            temp_insert$prey_name <- NA_character_
+            temp_insert$prey_name_original <- NA_character_
+            temp_insert$prey_aphia_id <- NA_integer_ 
+            for (tcol in c("prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus")) temp_insert[[tcol]] <- NA_character_
+        }
         processed_cols <- c(processed_cols, c("prey_name", "revised_prey_name", "prey_aphia_id"))
         if (is.null(temp_insert$prey_name) || is.na(temp_insert$prey_name) || nchar(temp_insert$prey_name)<1) warning("empty prey_name at row ", lidx)
 
@@ -665,6 +704,10 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
     if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+
+    cord <- columns_order("dna_diet")
+    if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
+    all_records <- all_records[, intersect(cord, names(all_records))]
 
     list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
@@ -776,8 +819,14 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         if (verbosity > 1) cat0("adding ", tt_lookup(temppred, taxon_table)$resolved_name, " -> ", tt_lookup(tempprey, taxon_table)$resolved_name, "\n")
         temp_insert <- list(predator_name = tt_lookup(temppred, taxon_table)$resolved_name)
         temp_insert$predator_name_original <- strip_name_specials(if (is_nonempty(r$revised_predator_name[lidx]) && is_nonempty(r$predator_name[lidx])) r$predator_name[lidx] else temppred)
-        this_aphia <- tt_lookup(temppred, taxon_table)$aphia_id
-        temp_insert$predator_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+        this_tax <- tt_lookup(temppred, taxon_table)
+        if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+            temp_insert$predator_aphia_id <- this_tax$aphia_id
+            for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("predator_", tcol)]] <- this_tax[[tcol]]
+        } else {
+            temp_insert$predator_aphia_id <- NA_integer_
+            for (tcol in c("predator_worms_rank", "predator_worms_kingdom", "predator_worms_phylum", "predator_worms_class", "predator_worms_order", "predator_worms_family", "predator_worms_genus")) temp_insert[[tcol]] <- NA_character_
+        }
         processed_cols <- c(processed_cols,c("predator_name", "revised_predator_name", "predator_aphia_id"))
         ## some fairly straightforward ones
         ## re-add "predator_group_soki" once repopulated
@@ -797,13 +846,20 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         if (is_nonempty(tempprey)) {
             temp_insert$prey_name <- tt_lookup(tempprey, taxon_table)$resolved_name
             temp_insert$prey_name_original <- strip_name_specials(if (is_nonempty(r$revised_prey_name[lidx]) && is_nonempty(r$prey_name[lidx])) r$prey_name[lidx] else tempprey)
-            this_aphia <- tt_lookup(tempprey, taxon_table)$aphia_id
-            temp_insert$prey_aphia_id <- if (!is.null(this_aphia) && length(this_aphia)==1 && !is.na(this_aphia)) this_aphia else NA_integer_
+            this_tax <- tt_lookup(tempprey, taxon_table)
+            if (nrow(this_tax) == 1 && !is.na(this_tax$aphia_id)) {
+                temp_insert$prey_aphia_id <- this_tax$aphia_id
+                for (tcol in c("worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")) temp_insert[[paste0("prey_", tcol)]] <- this_tax[[tcol]]
+            } else {
+                temp_insert$prey_aphia_id <- NA_integer_
+                for (tcol in c("prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus")) temp_insert[[tcol]] <- NA_character_
+            }
         } else {
             warning("empty prey_name at row ", lidx)
             temp_insert$prey_name <- NA_character_
             temp_insert$prey_name_original <- NA_character_
-            temp_insert$prey_aphia_id <- NA_integer_
+            temp_insert$prey_aphia_id <- NA_integer_ 
+            for (tcol in c("prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus")) temp_insert[[tcol]] <- NA_character_
         }
         processed_cols <- c(processed_cols, c("prey_name", "revised_prey_name", "prey_aphia_id"))
 
@@ -899,8 +955,11 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         all_records <- c(all_records, list(temp_insert))
     }
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
-    all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
     if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
+    cord <- columns_order("diet")
+    if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
+    all_records <- all_records[, intersect(cord, names(all_records))]
 
     list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
@@ -948,10 +1007,11 @@ columns_order <- function(data_type) {
 check_names <- function(this_names, this_names_revised, existing_table, existing_names = c(), cache_directory, verbosity, force = FALSE, marine_only = TRUE) {
     unmatched_names <- c()
     if (missing(existing_table)) {
-        taxon_table <- data.frame(name="bilbobaggins",resolved_name="bilbobaggins",aphia_id=NA,stringsAsFactors=FALSE)
+        taxon_table <- data.frame(name = character(), resolved_name = character(), aphia_id = integer(), worms_rank = character(), worms_kingdom = character(), worms_phylum = character(), worms_class = character(), worms_order = character(), worms_family = character(), worms_genus = character(), stringsAsFactors = FALSE)
     } else {
         taxon_table <- existing_table
-        if (!identical(sort(names(taxon_table)),c("aphia_id", "name", "resolved_name"))) stop("unexpected names in existing_table")
+        expected <- c("aphia_id", "name", "resolved_name", "worms_rank", "worms_kingdom", "worms_phylum", "worms_class", "worms_order", "worms_family", "worms_genus")
+        if (!setequal(names(taxon_table), expected)) stop("unexpected names in existing_table: ", paste(setdiff(names(taxon_table), expected), collapse = ", "))
     }
     if (missing(cache_directory)) cache_directory <- NULL
     for (k in seq_along(this_names)) {
@@ -998,7 +1058,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
                     this_resolved_name <- gsub(" sp$"," sp.",this_resolved_name)
                     this_resolved_name <- strip_name_specials(this_resolved_name)
                 }
-                taxon_table <- rbind(taxon_table,data.frame(name=this_taxon,resolved_name=this_resolved_name,aphia_id=NA,stringsAsFactors=FALSE))
+                taxon_table <- rbind(taxon_table, data.frame(name = this_taxon, resolved_name = this_resolved_name, aphia_id = NA_integer_, worms_rank = NA_character_, worms_kingdom = NA_character_, worms_phylum = NA_character_, worms_class = NA_character_, worms_order = NA_character_, worms_family = NA_character_, worms_genus = NA_character_, stringsAsFactors = FALSE))
             } else {
                 this_resolved_name <- strip_name_specials(this_resolved_name)
                 if (verbosity > 0) cat0(" AphiaID: ", thisrecord$AphiaID, "\n")
@@ -1008,7 +1068,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
                 cat0(" [", thisrecord$kingdom, " ", thisrecord$phylum, " ", thisrecord$class, " ", thisrecord$order, " ", thisrecord$family, " ", thisrecord$genus, "]\n")
                 if (tolower(thisrecord$rank) %in% c("species", "subspecies")) this_resolved_name <- thisrecord$scientificname
                 ## only use returned name if it was matched at species or subspecies level
-                taxon_table <- rbind(taxon_table,data.frame(name=this_taxon,resolved_name=this_resolved_name,aphia_id=thisrecord$AphiaID,stringsAsFactors=FALSE))
+                taxon_table <- rbind(taxon_table, data.frame(name = this_taxon, resolved_name = this_resolved_name, aphia_id = thisrecord$AphiaID, worms_rank = thisrecord$rank, worms_kingdom = thisrecord$kingdom, worms_phylum = thisrecord$phylum, worms_class = thisrecord$class, worms_order = thisrecord$order, worms_family = thisrecord$family, worms_genus = thisrecord$genus, stringsAsFactors=FALSE))
             }
             if (verbosity > 0) cat0(" Using resolved name: ", this_resolved_name, "\n")
 
@@ -1031,7 +1091,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
             }
         }
     }
-    list(taxon_table = taxon_table[taxon_table$name != "bilbobaggins", ], unmatched_names = unmatched_names) ## drop the dummy row before returning
+    list(taxon_table = taxon_table, unmatched_names = unmatched_names) ## drop the dummy row before returning
 }
 
 
