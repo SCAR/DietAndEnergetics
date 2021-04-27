@@ -67,13 +67,13 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
         if (is.null(cache_directory)) {
             do_cache <- FALSE
         } else {
-            if (!dir.exists(cache_directory)) stop("the specified cache_directory ",cache_directory," does not exist")
-            setCacheRootPath(path=cache_directory)
+            if (!dir.exists(cache_directory)) stop("the specified cache_directory ", cache_directory, " does not exist")
+            setCacheRootPath(path = cache_directory)
         }
     } else {
         do_cache <- FALSE
     }
-    if (!missing(scientific) && !is.na(scientific) && scientific=="Gammaridea") {
+    if (!missing(scientific) && !is.na(scientific) && scientific == "Gammaridea") {
         warning("temporarily using Gammaridea even though it is unaccepted")
         acceptable_status <- "unaccepted"
     }
@@ -90,6 +90,20 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
                 x[,cc] <- as.numeric(x[,cc])
         }
         x
+    }
+
+    ## memoized wm_record
+    mworms_record <- function(...) unique(do.call(mwormsi_record, ...))
+    mwormsi_record <- function(...) {
+        if (do_cache) {
+            tryCatch(memoizedCall(wm_record, ...), ## memoized version that will cache results to disk
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        } else {
+            args <- list(...)
+            args <- args[!names(args) %in% c("force", "fuzzy")] ## drop the "force" argument, which only applied to memoizedCall
+            tryCatch(do.call(wm_record, args), ## no caching of results
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        }
     }
 
     ## search on scientific name
@@ -138,24 +152,24 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
         }
     }
 
-    handle_results <- function(x,search_term,dots,follow_valid_names=TRUE) {
-        if (nrow(x)<1) return(x)
+    handle_results <- function(x, search_term, dots, follow_valid_names = TRUE) {
+        if (nrow(x) < 1) return(x)
         ## do we have a filter
-        filtokidx <- rep(TRUE,nrow(x))
+        filtokidx <- rep(TRUE, nrow(x))
         if (!is.null(filter)) {
             for (k in names(filter)) {
                 ##cat(k, "matching to:", filter[[k]], "\n")
                 ##cat(str(x[, k]))
-                filtokidx <- filtokidx & x[,k] %eq% filter[[k]]
+                filtokidx <- filtokidx & x[, k] %eq% filter[[k]]
                 ##cat(filtokidx)
             }
         }
         statusok_idx <- rep(TRUE, nrow(x))
         if (!is.null(acceptable_status)) statusok_idx <- tolower(x$status) %in% tolower(acceptable_status)
         if (!is.null(search_term)) {
-            ok <- x[filtokidx & statusok_idx & (!is.na(x$scientificname) & tolower(x$scientificname)==tolower(search_term)),]
+            ok <- x[filtokidx & statusok_idx & (!is.na(x$scientificname) & tolower(x$scientificname) == tolower(search_term)),]
         } else {
-            ok <- x[filtokidx & statusok_idx,]
+            ok <- x[filtokidx & statusok_idx, ]
         }
         if (nrow(ok)<1) {
             ## relax restrictions to include nomen dubium names
@@ -176,7 +190,7 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
                 ## no exact match on search term
                 redirect <- tolower(x$status) %in% follow & !(is.na(x$valid_AphiaID) | x$valid_AphiaID==0)
             }
-            if (sum(redirect)==1) {
+            if (sum(redirect) == 1) {
                 if (follow_valid_names) {
                     warning("valid name is ",x$valid_name[redirect],", searching on this")
                     ##dots[["scientific"]] <- x$valid_name[redirect]
@@ -186,13 +200,13 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
                 } else {
                     data.frame()
                 }
-            } else if (sum(redirect)<1) {
+            } else if (sum(redirect) < 1) {
                 data.frame() ## no results
                 ## try fuzzy here?
-            } else if (sum(redirect)>1) {
+            } else if (sum(redirect) > 1) {
                 ## ambiguous
-                tmp <- if (is.null(search_term)) "" else paste0("name \"",search_term,"\" is ")
-                warning(tmp,"ambiguous")
+                tmp <- if (is.null(search_term)) "" else paste0("name \"", search_term, "\" is ")
+                warning(tmp, "ambiguous")
                 data.frame()
             }
         } else {
@@ -227,6 +241,10 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
         search_term <- cleanup(common)
         dots$name <- common
         fxn <- cworms
+    } else if (!is.null(ids)) {
+        search_term <- NULL
+        fxn <- mworms_record
+        dots$id <- ids
     } else {
         stop("should not be here")
     }
@@ -242,5 +260,42 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
             search_term <- NULL
         }
     }
-    handle_results(x,search_term,dots,follow_valid_names=follow_valid)
+    handle_results(x, search_term, dots, follow_valid_names = follow_valid)
+}
+
+
+
+#' Get common name for Aphia ID
+#'
+#' @param ids numeric or string: AphiaID to match on
+#' @param cache_directory string: path to a cache directory
+#'
+#' @return A tibble
+#'
+#' @export
+worms_common <- function(ids, cache_directory) {
+    do_cache <- TRUE
+    if (!missing(cache_directory)) {
+        if (is.null(cache_directory)) {
+            do_cache <- FALSE
+        } else {
+            if (!dir.exists(cache_directory)) stop("the specified cache_directory ", cache_directory, " does not exist")
+            setCacheRootPath(path = cache_directory)
+        }
+    } else {
+        do_cache <- FALSE
+    }
+    ## memoized wm_record
+    mwormsi_common_id <- function(...) {
+        if (do_cache) {
+            cat("wuf?")
+            tryCatch(memoizedCall(wm_common_id, ...), ## memoized version that will cache results to disk
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        } else {
+            args <- list(...)
+            tryCatch(do.call(wm_common_id, args), ## no caching of results
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        }
+    }
+    unique(mwormsi_common_id(id = ids))
 }
