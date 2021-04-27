@@ -12,12 +12,14 @@ Encoding: UTF-8
 LazyData: true
 Imports:
   assertthat,
+  dplyr,
   httr,
   jsonlite,
   lubridate,
   readr,
   R.cache,
   readxl,
+  rlang,
   stringdist,
   stringr,
   worrms
