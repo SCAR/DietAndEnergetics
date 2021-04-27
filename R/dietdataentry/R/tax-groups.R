@@ -1,5 +1,23 @@
-soki_ruleset <- function(worms_cache_directory = "~/.Rcache") {
-    copepoda_rank <- search_worms("Copepoda", cache_directory = worms_cache_directory)$rank
+#' Rule set for determining SOKI groups
+#'
+#' @param worms_cache_directory string: path to a cache directory
+#'
+#' @return A function that takes the below parameters, and returns a string giving the SOKI group name
+#' * `worms_record` 1-row tibble: as returned by [search_worms()]
+#' * `rule_type` string: "prey" or "predator"
+#' * `scientific` string: if `worms_record` not provided, the scientific name to search on
+#' * `aphia_id` integer: if `worms_record` not provided, the Aphia ID to search on
+#' * `worms_cache_directory` string: path to a cache directory
+#'
+#' @examples
+#' \dontrun{
+#'   rules <- soki_ruleset()
+#'   rules(search_worms("Aptenodytes forsteri"), "predator")
+#' }
+#'
+#' @export
+soki_ruleset <- function(worms_cache_directory) {
+    copepoda_rank <- search_worms("Copepoda", cache_directory = worms_cache_directory)$rank ## was Subclass
     gammaridea_rank <- search_worms("Gammaridea", cache_directory = worms_cache_directory)$rank
     hyperiidea_rank <- search_worms("Hyperiidea",cache_directory = worms_cache_directory)$rank
     odontoceti_rank <- search_worms("Odontoceti",cache_directory = worms_cache_directory)$rank
@@ -15,7 +33,7 @@ soki_ruleset <- function(worms_cache_directory = "~/.Rcache") {
             ## no rules yet that can be applied without worms_record
             stop("need WoRMS record")
         }
-        tmp <- search_worms(ids = worms_record$AphiaID, cache_directory = worms_cache_directory)
+        tmp <- worms_hierarchy(id = worms_record$AphiaID, cache_directory = worms_cache_directory)
         hier <- as.list(tmp$scientificname)
         names(hier) <- tmp$rank
         rule_type <- match.arg(tolower(rule_type), c("predator", "prey"))
@@ -46,44 +64,52 @@ soki_ruleset <- function(worms_cache_directory = "~/.Rcache") {
         }
 
         ## rules common to both types
-        if (worms_record$valid_name == "Pleuragramma antarcticum") {
+        if (worms_record$valid_name %eq% "Pleuragramma antarcticum") {
             "<i>Pleuragramma antarcticum</i> (Antarctic silverfish)"
-        } else if (worms_record$valid_name == "Champsocephalus gunnari") {
+        } else if (worms_record$valid_name %eq% "Champsocephalus gunnari") {
             "<i>Champsocephalus gunnari</i> (mackerel icefish)" ## icefish as species
-        } else if (worms_record$genus == "Dissostichus") {
+        } else if (worms_record$genus %eq% "Dissostichus") {
             "<i>Dissostichus</i> spp. (toothfish)"
-        } else if (worms_record$valid_name == "Psychroteuthis glacialis") {
+        } else if (worms_record$valid_name %eq% "Psychroteuthis glacialis") {
             ## squid by family, so leave, except for:
             "<i>Psychroteuthis glacialis</i> (glacial squid)" ## only species in its family
-        } else if (worms_record$order == "Salpida") {
+        } else if (worms_record$order %eq% "Salpida") {
             "Salps"
-        } else if (worms_record$valid_name == "Euphausia superba") {
+        } else if (worms_record$valid_name %eq% "Euphausia superba") {
             ## separate Ant krill from other euphausiids
             "<i>Euphausia superba</i> (Antarctic krill)"
-        } else if (worms_record$order == "Euphausiacea") {
+        } else if (worms_record$order %eq% "Euphausiacea") {
             "Euphausiids (other krill)" ## other euphausiids
-        } else if (hier[copepoda_rank] == "Copepoda") {
+        } else if (hier[copepoda_rank] %eq% "Copepoda") {
             "Copepoda (copepods)"
-        } else if (hier[gammaridea_rank] == "Gammaridea") {
+        } else if (hier[gammaridea_rank] %eq% "Gammaridea") {
             "Gammaridea (gammarid amphipods)"
-        } else if (hier[hyperiidea_rank] == "Hyperiidea") {
+        } else if (hier[hyperiidea_rank] %eq% "Hyperiidea") {
             "Hyperiidea (hyperiid amphipods)"
+        } else if (worms_record$family %eq% "Hydrobatidae") {
+            "Hydrobatidae (storm petrels)"
+        } else if (worms_record$family %eq% "Diomedeidae") {
+            "Diomedeidae (albatrosses)"
+        } else if (worms_record$family %eq% "Pelecanoididae") {
+            "Pelecanoididae (diving petrels)"
+        } else if (worms_record$order %eq% "Procellariiformes") {
+            "Procellariidae (procellariid seabirds)"
         } else {
             if (rule_type == "prey") {
-                if (worms_record$phylum == "Chordata") {
+                if (worms_record$phylum %eq% "Chordata") {
                     ## these to family
                     name_and_vernacular(worms_record$family, cache_directory = worms_cache_directory)
-                } else if (worms_record$kingdom == "Animalia") {
+                } else if (worms_record$kingdom %eq% "Animalia") {
                     ## everything else in Animalia to class
                     name_and_vernacular(worms_record$class, cache_directory = worms_cache_directory)
-                } else if (worms_record$class == "Bacillariophyceae") {
+                } else if (worms_record$class %eq% "Bacillariophyceae") {
                     "Bacillariophyceae (pennate diatoms)"
-                } else if (hier$Subphylum == "Dinozoa" && !hier$Class %in% c("Colponemea", "Ellobiopsea", "Myzomonadea", "Perkinsea", "Perkinsasida")) {
+                } else if (hier$Subphylum %eq% "Dinozoa" && !hier$Class %in% c("Colponemea", "Ellobiopsea", "Myzomonadea", "Perkinsea", "Perkinsasida")) {
                     ## note: Dinozoa alone is not quite right: subphylum dinozoa includes the infraphyla Dinoflagellata and Protalveolata
                     ## but infraphylum is not returned in the hier object
                     ## subset by excluding Protalveolata classes (Colponemea, Ellobiopsea, Myzomonadea, Perkinsea, Perkinsasida)
                     "Dinoflagellata (dinoflagellates)"
-                } else if (worms_record$kingdom == "Bacteria") {
+                } else if (worms_record$kingdom %eq% "Bacteria") {
                     "Bacteria"
                 } else if (worms_record$kingdom %in% c("Chromista", "Plantae", "Protozoa")) {
                     name_and_vernacular(worms_record$phylum, cache_directory = worms_cache_directory)
@@ -91,17 +117,17 @@ soki_ruleset <- function(worms_cache_directory = "~/.Rcache") {
                     stop("uncategorized prey: ", worms_record$scientificname)
                 }
             } else if (rule_type == "predator") {
-                if (hier[odontoceti_rank] == "Odontoceti") {
+                if (hier[odontoceti_rank] %eq% "Odontoceti") {
                     "Odontoceti (toothed whales)"
-                } else if (hier[mysticeti_rank] == "Mysticeti") {
+                } else if (hier[mysticeti_rank] %eq% "Mysticeti") {
                     "Mysticeti (baleen whales)"
                 } else if (worms_record$valid_name %in% c("Arctocephalus gazella", "Arctocephalus tropicalis", "Arctocephalus forsteri")) {
                     "<i>Arctocephalus</i> spp. (Antarctic and subantarctic fur seals)"
-                } else if (worms_record$valid_name == "Mirounga leonina") {
+                } else if (worms_record$valid_name %eq% "Mirounga leonina") {
                     "<i>Mirounga leonina</i> (southern elephant seals)"
                 } else if (worms_record$valid_name %in% c("Lobodon carcinophaga", "Ommatophoca rossii", "Hydrurga leptonyx", "Leptonychotes weddellii")) {
                     "Pack ice seals"
-                } else if (worms_record$family == "Spheniscidae") {
+                } else if (worms_record$family %eq% "Spheniscidae") {
                     name_and_vernacular(paste0("<i>", worms_record$valid_name, "</i>"), id = worms_record$AphiaID, cache_directory = worms_cache_directory)
                 } else {
                     stop("uncategorized predator: ", worms_record$scientificname)

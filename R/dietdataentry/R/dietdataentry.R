@@ -16,6 +16,6 @@
 #' @importFrom stats as.formula na.omit
 #' @importFrom stringdist stringsim
 #' @importFrom stringr str_match_all str_split str_trim
-#' @importFrom worrms wm_common_id wm_record wm_records_common wm_records_name wm_records_taxamatch
+#' @importFrom worrms wm_classification wm_common_id wm_record wm_records_common wm_records_name wm_records_taxamatch
 #' @importFrom utils head str tail
 NULL

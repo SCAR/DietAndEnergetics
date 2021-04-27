@@ -285,10 +285,9 @@ worms_common <- function(ids, cache_directory) {
     } else {
         do_cache <- FALSE
     }
-    ## memoized wm_record
+    ## memoized
     mwormsi_common_id <- function(...) {
         if (do_cache) {
-            cat("wuf?")
             tryCatch(memoizedCall(wm_common_id, ...), ## memoized version that will cache results to disk
                      error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
         } else {
@@ -298,4 +297,38 @@ worms_common <- function(ids, cache_directory) {
         }
     }
     unique(mwormsi_common_id(id = ids))
+}
+
+#' Get full hierarchy for Aphia ID
+#'
+#' @param id numeric or string: AphiaID to match on
+#' @param cache_directory string: path to a cache directory
+#'
+#' @return A tibble
+#'
+#' @export
+worms_hierarchy <- function(id, cache_directory) {
+    do_cache <- TRUE
+    if (!missing(cache_directory)) {
+        if (is.null(cache_directory)) {
+            do_cache <- FALSE
+        } else {
+            if (!dir.exists(cache_directory)) stop("the specified cache_directory ", cache_directory, " does not exist")
+            setCacheRootPath(path = cache_directory)
+        }
+    } else {
+        do_cache <- FALSE
+    }
+    ## memoized
+    mwormsi_hier <- function(...) {
+        if (do_cache) {
+            tryCatch(memoizedCall(wm_classification, ...), ## memoized version that will cache results to disk
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        } else {
+            args <- list(...)
+            tryCatch(do.call(wm_classification, args), ## no caching of results
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+        }
+    }
+    mwormsi_hier(id = id)
 }
