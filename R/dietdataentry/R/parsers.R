@@ -265,7 +265,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
-    cat(paste(format(temp), collapse = ", "))
+    cat(paste(format(sort(temp)), collapse = ", "))
 
     cord <- columns_order(dtype)
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -352,7 +352,7 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
 
     ## check unique values in columns with controlled vocabularies
     if (verbosity > 0) cat("Checking controlled vocabularies ...\n")
-    controlled_cols <- c("isotopes_body_part_used", "taxon_breeding_stage", "taxon_sex", "taxon_life_stage", "taxon_mass_notes", "taxon_mass_units", "taxon_size_notes", "taxon_size_units", "delta_13C_variability_type", "delta_15N_variability_type", "C_N_ratio_variability_type", "C_N_ratio_type", "delta_34S_variability_type", "delta_15N_glutamic_acid_variability_type", "delta_15N_phenylalanine_variability_type", "isotopes_lipids_treatment","isotopes_carbonates_treatment", "isotopes_pretreatment")
+    controlled_cols <- c("isotopes_body_part_used", "taxon_breeding_stage", "taxon_sex", "taxon_life_stage", "taxon_mass_notes", "taxon_mass_units", "taxon_size_notes", "taxon_size_units", "delta_13C_variability_type", "delta_15N_variability_type", "C_N_ratio_variability_type", "C_N_ratio_type", "delta_34S_variability_type", "delta_15N_glutamic_acid_variability_type", "delta_15N_phenylalanine_variability_type", "isotopes_lipids_treatment","isotopes_carbonates_treatment") ##"isotopes_pretreatment"
     for (k in controlled_cols) checkvals(r[, k], k)
     if (verbosity > 0) cat("done.\n")
 
@@ -472,7 +472,7 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
     if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
-    cat(paste(format(temp), collapse = ", "))
+    cat(paste(format(sort(temp)), collapse = ", "))
 
     cord <- columns_order("isotopes")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -1001,7 +1001,7 @@ columns_order <- function(data_type) {
         idx <- which(out == "measurement_name")
         out <- c(out[seq_len(idx)], "measurement_class", out[seq(from = idx + 1, to = length(out), by = 1)])
     }
-    tolower(out)
+    out
 }
 
 check_names <- function(this_names, this_names_revised, existing_table, existing_names = c(), cache_directory, verbosity, force = FALSE, marine_only = TRUE) {
@@ -1085,8 +1085,8 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
                     temp_idx <- temp_idx[order(temp_score[temp_idx],decreasing=TRUE)] ## closest match first
                 }
                 if (length(temp_idx)>0) {
-                    cat("     closest matches:\n")
-                    cat0("       ", existing_names[temp_idx], "\n")
+                    cat("     closest matches:\n       ")
+                    cat0(paste(existing_names[temp_idx], collapse = ", ", sep = ", "), "\n")
                 }
             }
         }
