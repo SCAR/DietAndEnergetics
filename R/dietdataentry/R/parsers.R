@@ -1089,7 +1089,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
             ## check against existing names
             if (length(existing_names)>0) {
                 temp_score <- stringsim(this_resolved_name, existing_names)
-                if (any(temp_score==1)) {
+                if (any(temp_score == 1)) {
                     if (verbosity > 0) cat("  ++  exact match in existing trophic names\n")
                     temp_idx <- c()##which(temp_score>0.99)
                 } else {
@@ -1100,7 +1100,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
                 }
                 if (length(temp_idx) > 0 && verbosity > 0) {
                     cat("     closest matches:\n       ")
-                    cat0(paste(existing_names[temp_idx], collapse = ", ", sep = ", "), "\n")
+                    cat0(paste(unique(existing_names[temp_idx]), collapse = ", ", sep = ", "), "\n")
                 }
             }
         }

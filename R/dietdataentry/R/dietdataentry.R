@@ -9,6 +9,7 @@
 #' @importFrom dplyr %>% bind_rows mutate tibble
 #' @importFrom httr content GET
 #' @importFrom lubridate now ymd ymd_hms
+#' @importFrom methods as
 #' @importFrom R.cache memoizedCall setCacheRootPath
 #' @importFrom readr cols read_csv
 #' @importFrom readxl excel_sheets read_excel
