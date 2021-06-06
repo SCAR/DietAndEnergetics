@@ -12,8 +12,11 @@ search_worms(
   follow_valid = TRUE,
   like = FALSE,
   try_fuzzy = FALSE,
-  cache_directory,
-  acceptable_status = c("accepted", "nomen dubium", "temporary name"),
+  cache_directory = worms_cache_dir(),
+  acceptable_status = c("accepted", "temporary name",
+    "uncertain@unacceptreason:unassessed",
+    "uncertain@unacceptreason:requiring further investigation",
+    "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium"),
   follow = c("unaccepted", "alternate representation"),
   filter = NULL,
   ...
@@ -85,10 +88,16 @@ This function is a wrapper around \code{\link[worrms]{wm_records_name}} and rela
   ## we can restrict this search, e.g.
   ## search for Ctenophora that has phylum name Ctenophora
   search_worms("Ctenophora@phylum:Ctenophora")
+  ## or a name at a certain rank
+  search_worms("Ctenophora@rank:phylum")
 
   ## earthworms, these don't appear by default because they are not a marine taxon
   search_worms("Lumbricidae")
   ## allow non-marine taxa
   search_worms("Lumbricidae@marine_only:FALSE")
+  ## or equivalently
+  search_worms("Lumbricidae", marine_only = FALSE)
+
+includes [Myopsida + Oegopsida] which are not demonstrated to form a clade
 }
 }

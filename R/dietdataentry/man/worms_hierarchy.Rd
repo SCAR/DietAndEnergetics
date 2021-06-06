@@ -4,7 +4,7 @@
 \alias{worms_hierarchy}
 \title{Get full hierarchy for Aphia ID}
 \usage{
-worms_hierarchy(id, cache_directory)
+worms_hierarchy(id, cache_directory = worms_cache_dir())
 }
 \arguments{
 \item{id}{numeric or string: AphiaID to match on}

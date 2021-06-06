@@ -4,7 +4,7 @@
 \alias{worms_common}
 \title{Get common name for Aphia ID}
 \usage{
-worms_common(ids, cache_directory)
+worms_common(ids, cache_directory = worms_cache_dir())
 }
 \arguments{
 \item{ids}{numeric or string: AphiaID to match on}

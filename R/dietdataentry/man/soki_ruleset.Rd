@@ -4,7 +4,7 @@
 \alias{soki_ruleset}
 \title{Rule set for determining SOKI groups}
 \usage{
-soki_ruleset(worms_cache_directory)
+soki_ruleset(worms_cache_directory = worms_cache_dir())
 }
 \arguments{
 \item{worms_cache_directory}{string: path to a cache directory}

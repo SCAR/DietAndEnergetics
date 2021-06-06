@@ -52,15 +52,21 @@
 #'   ## we can restrict this search, e.g.
 #'   ## search for Ctenophora that has phylum name Ctenophora
 #'   search_worms("Ctenophora@phylum:Ctenophora")
+#'   ## or a name at a certain rank
+#'   search_worms("Ctenophora@rank:phylum")
 #'
 #'   ## earthworms, these don't appear by default because they are not a marine taxon
 #'   search_worms("Lumbricidae")
 #'   ## allow non-marine taxa
 #'   search_worms("Lumbricidae@marine_only:FALSE")
+#'   ## or equivalently
+#'   search_worms("Lumbricidae", marine_only = FALSE)
+#'
+#' includes [Myopsida + Oegopsida] which are not demonstrated to form a clade
 #' }
 #' @export
-
-search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = FALSE, follow_valid = TRUE, like = FALSE, try_fuzzy = FALSE, cache_directory, acceptable_status = c("accepted", "nomen dubium", "temporary name"), follow = c("unaccepted", "alternate representation"), filter = NULL, ...) {
+search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = FALSE, follow_valid = TRUE, like = FALSE, try_fuzzy = FALSE, cache_directory = worms_cache_dir(), acceptable_status = c("accepted", "temporary name", "uncertain@unacceptreason:unassessed", "uncertain@unacceptreason:requiring further investigation", "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium"), follow = c("unaccepted", "alternate representation"), filter = NULL, ...) {
+    ## "nomen dubium" needed for Genaxinus bongraini, Teuthida but don't want it for some others
     do_cache <- TRUE
     if (missing(filter)) filter <- NULL
     if (!missing(cache_directory)) {
@@ -70,10 +76,11 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
             if (!dir.exists(cache_directory)) stop("the specified cache_directory ", cache_directory, " does not exist")
             setCacheRootPath(path = cache_directory)
         }
-    } else {
+    } else if (length(cache_directory) < 1 || !nzchar(cache_directory)) {
         do_cache <- FALSE
     }
-    if (!missing(scientific) && !is.na(scientific) && scientific == "Gammaridea") {
+    if ((!missing(scientific) && !is.na(scientific) && scientific == "Gammaridea") ||
+        (!missing(ids) && !is.na(ids) && all(ids == 1207))) {
         warning("temporarily using Gammaridea even though it is unaccepted")
         acceptable_status <- "unaccepted"
     }
@@ -157,17 +164,26 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
         ## do we have a filter
         filtokidx <- rep(TRUE, nrow(x))
         if (!is.null(filter)) {
-            for (k in names(filter)) {
-                ##cat(k, "matching to:", filter[[k]], "\n")
-                ##cat(str(x[, k]))
-                filtokidx <- filtokidx & x[, k] %eq% filter[[k]]
-                ##cat(filtokidx)
+            for (k in names(filter)) filtokidx <- filtokidx & x[, k] %eq% filter[[k]]
+        }
+        if ("rank" %in% names(dots)) filtokidx <- filtokidx & tolower(x$rank) %eq% dots$rank
+        statusok_idx <- rep(TRUE, nrow(x))
+        if (!is.null(acceptable_status)) {
+            statusok_idx <- tolower(x$status) %in% tolower(acceptable_status)
+            conditional_status <- acceptable_status[grepl(":", acceptable_status)]
+            for (cs in conditional_status) {
+                bits <- str_match_all(cs, "(.+)@(.+):(.+)")[[1]]
+                if (bits[1, 4] %eq% "NA") {
+                    statusok_idx <- statusok_idx | (tolower(x$status) %eq% tolower(bits[1, 2]) & is.na(x[[bits[1, 3]]]))
+                } else {
+                    statusok_idx <- statusok_idx | (tolower(x$status) %eq% tolower(bits[1, 2]) & x[[bits[1, 3]]] %eq% bits[1, 4])
+                }
             }
         }
-        statusok_idx <- rep(TRUE, nrow(x))
-        if (!is.null(acceptable_status)) statusok_idx <- tolower(x$status) %in% tolower(acceptable_status)
+        ## special case: status is "alternate representation" but the record points to itself as the valid name (!!)
+        statusok_idx <- statusok_idx | (!is.na(x$status) & tolower(x$status) == "alternate representation" & !is.na(x$valid_AphiaID) & x$valid_AphiaID == x$AphiaID)
         if (!is.null(search_term)) {
-            ok <- x[filtokidx & statusok_idx & (!is.na(x$scientificname) & tolower(x$scientificname) == tolower(search_term)),]
+            ok <- x[filtokidx & statusok_idx & (!is.na(x$scientificname) & tolower(x$scientificname) == tolower(search_term)), ]
         } else {
             ok <- x[filtokidx & statusok_idx, ]
         }
@@ -192,11 +208,11 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
             }
             if (sum(redirect) == 1) {
                 if (follow_valid_names) {
-                    warning("valid name is ",x$valid_name[redirect],", searching on this")
-                    ##dots[["scientific"]] <- x$valid_name[redirect]
-                    dots[["name"]] <- x$valid_name[redirect]
-                    x <- mworms(dots)
-                    handle_results(x,NULL,dots,follow_valid_names=FALSE)
+                    warning("valid name is ", x$valid_name[redirect], " (AphiaID ", x$valid_AphiaID[redirect], "), searching on this")
+                    dots$scientific <- dots$name <- NULL
+                    dots$id <- x$valid_AphiaID[redirect]
+                    x <- mworms_record(dots)
+                    handle_results(x, NULL, dots, follow_valid_names = FALSE)
                 } else {
                     data.frame()
                 }
@@ -224,8 +240,11 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
             if (bits[1, 3]=="status") {
                 acceptable_status <- c(bits[1, 4], acceptable_status)
                 scientific <- bits[1, 2]
-            } else if (bits[1, 3]=="marine_only") {
+            } else if (bits[1, 3] == "marine_only") {
                 dots$marine_only <- tolower(bits[1, 4]) %in% c("true", "t", "1")
+                scientific <- bits[1, 2]
+            } else if (bits[1, 3] == "rank") {
+                dots$rank <- tolower(bits[1, 4])
                 scientific <- bits[1, 2]
             } else {
                 if (!is.null(filter)) stop("filter already specified, can't use thing@thing:thing notation")
@@ -273,7 +292,7 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
 #' @return A tibble
 #'
 #' @export
-worms_common <- function(ids, cache_directory) {
+worms_common <- function(ids, cache_directory = worms_cache_dir()) {
     do_cache <- TRUE
     if (!missing(cache_directory)) {
         if (is.null(cache_directory)) {
@@ -307,7 +326,7 @@ worms_common <- function(ids, cache_directory) {
 #' @return A tibble
 #'
 #' @export
-worms_hierarchy <- function(id, cache_directory) {
+worms_hierarchy <- function(id, cache_directory = worms_cache_dir()) {
     do_cache <- TRUE
     if (!missing(cache_directory)) {
         if (is.null(cache_directory)) {
@@ -332,3 +351,17 @@ worms_hierarchy <- function(id, cache_directory) {
     }
     mwormsi_hier(id = id)
 }
+
+#' Set the worms cache directory
+#'
+#' @param cache_directory string: path to a cache directory, or `NULL` to clear the current setting
+#'
+#' @export
+worms_cache_dir <- function(cache_directory) {
+    opts <- options()$dietdataentry
+    if (is.null(opts)) opts <- list()
+    if (missing(cache_directory)) return(opts$worms_cache_directory)
+    opts$worms_cache_directory <- cache_directory
+    options(dietdataentry = opts)
+}
+
