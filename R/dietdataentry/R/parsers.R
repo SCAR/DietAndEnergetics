@@ -174,6 +174,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
         ## some fairly straightforward ones
         ## re-add taxon_group_soki once populated
         for (blah in c("taxon_sample_count", "taxon_sample_id", "physical_sample_id", "analytical_replicate_id", "analytical_replicate_count")) {
+            if (!blah %in% names(r)) stop("expected column ", blah, " is missing from the sheet")
             temp <- r[lidx, blah]
             if (!is.na(temp) && is.na(as.numeric(temp))) {
                 cat(str(temp))
@@ -627,6 +628,7 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
 
         ## re-add "prey_group_soki" once repopulated
         for (blah in c("prey_is_aggregate")) {
+            if (!blah %in% names(r)) stop("expected column ", blah, " is missing from the sheet")
             temp <- r[lidx, blah]
             processed_cols <- c(processed_cols, blah)
             if (is.na(temp)) {
@@ -831,7 +833,8 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         }
         processed_cols <- c(processed_cols,c("predator_name", "revised_predator_name", "predator_aphia_id"))
         ## some fairly straightforward ones
-        for (blah in c("original_record_id", "predator_group_soki", "predator_life_stage", "predator_breeding_stage", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id")) {
+        for (blah in c("original_record_id", "predator_life_stage", "predator_breeding_stage", "predator_sample_count", "predator_size_min", "predator_size_max", "predator_size_mean", "predator_size_sd", "predator_size_units", "predator_size_notes", "predator_mass_min", "predator_mass_max", "predator_mass_mean", "predator_mass_sd", "predator_mass_units", "predator_mass_notes", "predator_sample_id")) {
+            if (!blah %in% names(r)) stop("expected column ", blah, " is missing from the sheet")
             temp <- r[lidx, blah]
             processed_cols <- c(processed_cols, blah)
             if (blah %in% c("predator_life_stage", "predator_breeding_stage")) temp <- gsub(", ", ",", temp)
@@ -861,12 +864,13 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
             warning("empty prey_name at row ", lidx)
             temp_insert$prey_name <- NA_character_
             temp_insert$prey_name_original <- NA_character_
-            temp_insert$prey_aphia_id <- NA_integer_ 
+            temp_insert$prey_aphia_id <- NA_integer_
             for (tcol in c("prey_worms_rank", "prey_worms_kingdom", "prey_worms_phylum", "prey_worms_class", "prey_worms_order", "prey_worms_family", "prey_worms_genus", "prey_group_soki")) temp_insert[[tcol]] <- NA_character_
         }
         processed_cols <- c(processed_cols, c("prey_name", "revised_prey_name", "prey_aphia_id"))
 
-        for (blah in c("prey_group_soki", "prey_is_aggregate", "prey_life_stage", "prey_sample_count", "prey_size_min", "prey_size_max", "prey_size_mean", "prey_size_sd", "prey_size_units", "prey_size_notes", "prey_mass_min", "prey_mass_max", "prey_mass_mean", "prey_mass_sd", "prey_mass_units", "prey_mass_notes")) {
+        for (blah in c("prey_is_aggregate", "prey_life_stage", "prey_sample_count", "prey_size_min", "prey_size_max", "prey_size_mean", "prey_size_sd", "prey_size_units", "prey_size_notes", "prey_mass_min", "prey_mass_max", "prey_mass_mean", "prey_mass_sd", "prey_mass_units", "prey_mass_notes")) {
+            if (!blah %in% names(r)) stop("expected column ", blah, " is missing from the sheet")
             temp <- r[lidx, blah]
             processed_cols <- c(processed_cols, blah)
             if (is.na(temp)) {
