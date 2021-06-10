@@ -1,6 +1,6 @@
 Package: dietdataentry
 Title: Administrative Functions for the SCAR Southern Ocean Diet and Energetics Database
-Version: 0.0.2
+Version: 0.0.3
 Authors@R:
     person(given = "Ben",
            family = "Raymond",
