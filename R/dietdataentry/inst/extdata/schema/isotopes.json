@@ -1,5 +1,5 @@
 {
-    "record_id" : {"expected" : false, "type" : "integer"},
+    "record_id" : {"expected" : false, "type" : "numeric"},
     "source_id" : {"expected" : true, "type" : "integer"},
     "original_record_id" : {"expected" : true, "type" : "character"},
     "location" : {"expected" : true, "type" : "character"},
