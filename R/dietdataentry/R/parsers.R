@@ -107,7 +107,7 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
         warning("using the first worksheet ('", sheets[1], "')")
         this_sheet <- sheets[1]
     }
-    r <- as.data.frame(read_excel(filename, sheet = this_sheet), stringsAsFactors = FALSE)
+    r <- as.data.frame(read_excel(filename, sheet = this_sheet, col_types = get_cols_format(filename, sheet_name = this_sheet, sheet_type = dtype)), stringsAsFactors = FALSE)
     names(r) <- tolower(names(r))
     raw_r <- r
 
@@ -263,10 +263,10 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     if (verbosity > 0) cat(length(all_records), "data records parsed.\n")
     ## to data frame
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
-    if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
-    cat(paste(format(sort(temp)), collapse = ", "))
+    cat(paste(format(sort(temp)), collapse = ", "), "\n")
 
     cord <- columns_order(dtype)
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -275,6 +275,22 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     list(sources = sources$sources, records = all_records, raw = list(sources = sources$raw, records = raw_r))
 }
 
+get_cols_format <- function(filename, sheet_name, sheet_type) {
+    ## read column types from schema
+    this_schema <- jsonlite::fromJSON(system.file(file.path("extdata", "schema", paste0(sheet_type, ".json")), package = "dietdataentry"))
+    cty <- vapply(names(this_schema), function(z) this_schema[[z]]$type, FUN.VALUE = "")
+    ## map from our schema types (character, date, datetime, integer, numeric) to read_excel's types ("guess", "logical", "numeric", "date", "text")
+    remap_type <- function(ty) switch(ty, character = "text", datetime =, date = "date", integer =, numeric = "numeric", stop("unexpected type: ", ty))
+    cty <- unlist(lapply(cty, remap_type))
+    ## now align these with columns in sheet
+    chk <- readxl::read_excel(filename, sheet = sheet_name, n_max = 0)
+    unex_cols <- setdiff(names(chk), names(cty))
+    if (length(unex_cols) > 0) {
+        warning("unrecognized columns in sheet, using col_type = \"guess\": ", paste(unex_cols, collapse = ", "))
+        cty <- c(cty, setNames(rep("guess", length(unex_cols)), unex_cols))
+    }
+    cty[names(chk)]
+}
 
 #' Parse isotopes data spreadsheet
 #'
@@ -318,7 +334,8 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
         warning("could not find worksheet named \"isotopes\" or \"trait\", using the first worksheet (\"", sheets[1], "\")")
         this_sheet <- sheets[1]
     }
-    r <- as.data.frame(read_excel(filename, sheet = this_sheet), stringsAsFactors = FALSE)
+
+    r <- as.data.frame(read_excel(filename, sheet = this_sheet, col_types = get_cols_format(filename, sheet_name = this_sheet, sheet_type = "isotopes")), stringsAsFactors = FALSE)
     raw_r <- r
 
     ## trim off any trailing rows that might have been used for calculations
@@ -470,10 +487,10 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
     if (verbosity > 0) cat(length(all_records), "isotope data records parsed.\n")
     ## to data frame
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
-    if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
     cat("Unique dates found in these records:\n  ")
     temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
-    cat(paste(format(sort(temp)), collapse = ", "))
+    cat(paste(format(sort(temp)), collapse = ", "), "\n")
 
     cord <- columns_order("isotopes")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -520,7 +537,7 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
             warning("could not find worksheet named \"DNA\", using the first worksheet (\"", sheets[1], "\")")
             this_sheet <- sheets[1]
         }
-        r <- as.data.frame(read_excel(filename, sheet = this_sheet), stringsAsFactors = FALSE)
+        r <- as.data.frame(read_excel(filename, sheet = this_sheet, col_types = get_cols_format(filename, sheet_name = this_sheet, sheet_type = "dna_diet")), stringsAsFactors = FALSE)
     }
     raw_r <- r
 
@@ -705,7 +722,7 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
     }
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
-    if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
 
     cord <- columns_order("dna_diet")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -756,7 +773,7 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         warning("could not find worksheet named \"trophic\" or \"data\", using the first worksheet ('", sheets[1], "')")
         this_sheet <- sheets[1]
     }
-    r <- as.data.frame(read_excel(filename, sheet = this_sheet), stringsAsFactors = FALSE)
+    r <- as.data.frame(read_excel(filename, sheet = this_sheet, col_types = get_cols_format(filename, sheet_name = this_sheet, sheet_type = "diet")), stringsAsFactors = FALSE)
     raw_r <- r
 
     ## trim off any trailing rows that might have been used for calculations
@@ -961,7 +978,7 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
         all_records <- c(all_records, list(temp_insert))
     }
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
-    if (length(unmatched_names) > 0) warning("unmatched names: ", paste(unmatched_names, collapse = ", "))
+    if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
     cord <- columns_order("diet")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
