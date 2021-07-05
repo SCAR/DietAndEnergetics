@@ -39,6 +39,7 @@ validate_data <- function(x, records_type = "guess", check_taxonomy = FALSE) {
     #if (!all(expected %in% names_provided)) stop("columns missing from spreadsheet: ", paste(setdiff(expected, names_provided), collapse = ", "))
     #if (!all(names_provided %in% expected)) warning("ignoring unexpected columns in spreadsheet: ", paste(setdiff(names_provided, expected), sep = ", "))
 
+    if (any(duplicated(x$record_id))) stop("duplicate record_id values")
 
     if (!all(x$quality_flag %in% c("G","Q"))) stop("quality values")
     if (!all(x$is_secondary_data %in% c("Y","N"))) stop("secondary_data values")

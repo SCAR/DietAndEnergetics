@@ -16,11 +16,11 @@ so_append_data(
 \arguments{
 \item{new_data}{list: as returned by \code{\link[=parse_diet]{parse_diet()}}, \code{\link[=parse_isotopes]{parse_isotopes()}}, etc}
 
-\item{existing_data}{data.frame: the existing diet (or isotopes, etc) data frame, as returned by \code{\link[sohungry:so_diet]{sohungry::so_diet()}}, \code{\link[sohungry:so_diet]{sohungry::so_isotopes()}}, etc}
+\item{existing_data}{data.frame: the existing diet (or isotopes, etc) data frame, as returned by \code{\link[sohungry:so_diet]{sohungry::so_diet()}}, \code{\link[sohungry:so_isotopes]{sohungry::so_isotopes()}}, etc}
 
-\item{existing_sources}{data.frame: the existing sources data frame, as returned by \code{\link[sohungry:so_diet]{sohungry::so_sources()}}}
+\item{existing_sources}{data.frame: the existing sources data frame, as returned by \code{\link[sohungry:so_sources]{sohungry::so_sources()}}}
 
-\item{records_type}{string: "diet", "dna_diet", "isotopes", "lipids", or "energetics"}
+\item{records_type}{string: "diet", "dna_diet", "isotopes", "lipids", or "energetics". Note that "isotopes" only supports measurement-value ("mv") format, as do "lipids" and "energetics"}
 
 \item{action_if_existing}{string: what to do if we find one or more records in \code{new_data} that looks like an existing one in \code{existing_data}? Either "stop", "warn", or "ignore"}
 
