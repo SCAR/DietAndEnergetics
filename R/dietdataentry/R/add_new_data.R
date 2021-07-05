@@ -112,6 +112,7 @@ so_append_data <- function(new_data, existing_data, existing_sources, records_ty
     ##write.csv(blah,file="c:/i/projects/trophic_networks/so_web/scar_dump/scar_isotopes.csv",row.names=FALSE,na="")
 
     ##  measurement-value format
+    new_record_id <- floor(max(existing_data$record_id, na.rm = TRUE))
     if (records_type %in% mv_format_types) {
         if (records_type == "isotopes") {
             mmt_cols <- c("taxon_size_min", "taxon_size_max", "taxon_size_mean", "taxon_size_sd", "taxon_size_units", "taxon_size_notes",
@@ -128,7 +129,6 @@ so_append_data <- function(new_data, existing_data, existing_sources, records_ty
 
         blah2 <- dplyr::select_at(new_data, setdiff(names(new_data), mmt_cols)) %>% mutate(measurement_name = NA_character_, measurement_min_value = NA_real_, measurement_max_value = NA_real_, measurement_mean_value = NA_real_, measurement_variability_value = NA_real_, measurement_variability_type = NA_character_, measurement_units = NA_character_, measurement_method = NA_character_)
         newxi <- tibble()
-        new_record_id <- max(existing_data$record_id, na.rm = TRUE)
 
         for (k in seq_len(nrow(new_data))) {
             newrows <- tibble()
@@ -261,6 +261,8 @@ so_append_data <- function(new_data, existing_data, existing_sources, records_ty
         ##blah <- blah[,!names(blah) %in% skip_vars]
         new_data$predator_group_soki <- NA_character_
         new_data$prey_group_soki <- NA_character_
+
+        new_data$record_id <- new_record_id + seq_len(nrow(new_data))
 
         ## dates are char, so leave as is
         col_order <- c(intersect(columns_order(records_type), names(new_data)), "source_details", "source_doi")
