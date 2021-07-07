@@ -1,8 +1,8 @@
 ---
-title: ""
+title: "Southern Ocean Diet and Energetics Database"
 ---
 
-<link rel="stylesheet" href="css\soded.css" type="text/css" />
+<link rel="stylesheet" href="css/soded.css" type="text/css" />
 
 
 ```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = FALSE, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup"}
@@ -22,20 +22,20 @@ doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_b
 
 ```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
 cache_dir <- tempdir()
-xd <- so_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
-xd <- xd %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xd <- so_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xd <- xd %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
-xdna <- so_dna_diet(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
-xdna <- xdna %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xdna <- so_dna_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xdna <- xdna %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
-xi <- so_isotopes(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xi <- xi %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xi <- so_isotopes(format = "mv", cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xi <- xi %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
-xe <- so_energetics(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xe <- xe %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xe <- so_energetics(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xe <- xe %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
-xl <- so_lipids(cache_directory=cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xl <- xl %>% mutate(last_modified=as.Date(ymd_hms(last_modified)), lon=(east+west)/2, lat=(north+south)/2)
+xl <- so_lipids(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xl <- xl %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
 xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
   xdna %>% dplyr::select(source_id, source_details, source_doi),
@@ -49,16 +49,16 @@ xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
     is.na(DOI)~"",
     TRUE~DOI))
 
-all_stats <- bind_rows(xd %>% dplyr::summarize("Data type"="Dietary sample data (gut content, etc)", "Number of records"=n(), "Number of taxa"=n_distinct(c(predator_name,prey_name)), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
-  xdna %>% dplyr::summarize("Data type"="DNA diet data", "Number of records"=n(), "Number of taxa"=n_distinct(c(predator_name,prey_name)), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
-  xi %>% dplyr::summarize("Data type"="Stable isotopes", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
-  xl %>% dplyr::summarize("Data type"="Lipids", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
-  xe %>% dplyr::summarize("Data type"="Energetics", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(source_id), "Last updated"=max(last_modified)),
-  sol_equations() %>% dplyr::summarize("Data type"="Allometric equations", "Number of records"=n(), "Number of taxa"=n_distinct(taxon_name), "Number of studies"=n_distinct(reference))##, "Last updated"=max(last_modified)
+all_stats <- bind_rows(xd %>% dplyr::summarize("Data type" = "Dietary sample data (gut content, etc)", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xdna %>% dplyr::summarize("Data type" = "DNA diet data", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xi %>% dplyr::summarize("Data type" = "Stable isotopes", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xl %>% dplyr::summarize("Data type" = "Lipids", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xe %>% dplyr::summarize("Data type" = "Energetics", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  sol_equations() %>% dplyr::summarize("Data type" = "Allometric equations", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(reference))##, "Last updated"=max(last_modified)
 )
 ```
 
-# Southern Ocean Diet and Energetics Database {.tabset}
+# {.tabset}
 
 Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on <a href="http://www.scar.org/ssg/life-sciences/eg-abi" target="_blank" rel="noopener noreferrer">Antarctic Biodiversity Informatics (EG-ABI)</a> and <a href="http://www.scar.org/ssg/life-sciences/bamm" target="_blank" rel="noopener noreferrer">Birds and Marine Mammals (EG-BAMM)</a> are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
 
@@ -169,6 +169,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - S&iacute;lvia Louren&ccedil;o, Ryan Saunders, and colleagues (<i>Krefftichthys</i> diet)
 - Julie McInnes (albatross diet and stable isotopes)
 - Lo&iuml;c Michel, Gilles Lepoint, and colleagues (benthic stable isotopes)
+- Baptiste Le Bourg, Camille Moreau, Gilles Lepoint, Lo&iuml;c Michel (sea star isotopes and morphological measurements)
 - Ryan Reisinger (Marion Island stable isotopes)
 - Fokje Schaafsma and colleagues (energetics)
 - Arnaud Tarroux, Kit Kovacs, and colleagues (seal and penguin stable isotopes)
