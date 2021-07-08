@@ -6,7 +6,6 @@
 \usage{
 parse_energetics(
   filename,
-  dbh,
   worms_cache_directory = NULL,
   verbosity = 1,
   refresh_worms_cache = FALSE
@@ -14,8 +13,6 @@ parse_energetics(
 }
 \arguments{
 \item{filename}{string: path to Excel file}
-
-\item{dbh}{optional: database handle}
 
 \item{worms_cache_directory}{string: path to cache directory for taxonomic data}
 

@@ -48,14 +48,6 @@ parse_quality_flag <- function(flag,lidx) {
     }
 }
 
-get_existing_names <- function(dbh) {
-    if (requireNamespace("dietdataentrydb", quietly = TRUE)) {
-        dietdataentrydb::get_existing_names(dbh)
-    } else {
-        c()
-    }
-}
-
 format_datecol <- function(z) {
     ## z should be a column from a data.frame
     if (inherits(z, "character")) {

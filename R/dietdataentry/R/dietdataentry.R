@@ -14,7 +14,7 @@
 #' @importFrom readr cols read_csv
 #' @importFrom readxl excel_sheets read_excel
 #' @importFrom rlang .data
-#' @importFrom stats as.formula na.omit
+#' @importFrom stats as.formula na.omit setNames
 #' @importFrom stringdist stringsim
 #' @importFrom stringr str_match_all str_split str_trim
 #' @importFrom worrms wm_classification wm_common_id wm_record wm_records_common wm_records_name wm_records_taxamatch

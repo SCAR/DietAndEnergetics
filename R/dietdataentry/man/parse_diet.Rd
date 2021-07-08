@@ -6,7 +6,6 @@
 \usage{
 parse_diet(
   filename,
-  dbh,
   existing_names,
   worms_cache_directory = NULL,
   verbosity = 1,
@@ -15,8 +14,6 @@ parse_diet(
 }
 \arguments{
 \item{filename}{string: path to Excel file}
-
-\item{dbh}{database handle: optional}
 
 \item{existing_names}{character: vector of existing taxon names}
 

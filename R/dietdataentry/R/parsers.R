@@ -60,7 +60,6 @@ tt_lookup <- function(nm, taxon_table, which = "name") {
 #' Parse energetics data spreadsheet
 #'
 #' @param filename string: path to Excel file
-#' @param dbh optional: database handle
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
 #' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
@@ -68,14 +67,13 @@ tt_lookup <- function(nm, taxon_table, which = "name") {
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_energetics <- function(filename, dbh, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
-    doparse("energetics", filename = filename, dbh = dbh, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
+parse_energetics <- function(filename, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+    doparse("energetics", filename = filename, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
 }
 
 #' Parse lipids data spreadsheet
 #'
 #' @param filename string: path to Excel file
-#' @param dbh optional: database handle
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
 #' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
@@ -83,17 +81,16 @@ parse_energetics <- function(filename, dbh, worms_cache_directory = NULL, verbos
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_lipids <- function(filename, dbh, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
-    doparse("lipids", filename = filename, dbh = dbh, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
+parse_lipids <- function(filename, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+    doparse("lipids", filename = filename, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
 }
 
-doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory, verbosity, refresh_worms_cache) {
+doparse <- function(dtype, filename, existing_names, worms_cache_directory, verbosity, refresh_worms_cache) {
     ## check inputs
     assert_that(is.string(dtype))
     dtype <- match.arg(tolower(dtype), c("energetics", "lipids"))
     if (missing(existing_names)) existing_names <- c()
 
-    if (!missing(dbh)) assert_that(inherits(dbh, c("JDBCConnection","OdbcConnection")))
     if (!file.exists(filename)) stop("file ", filename, " does not exist")
 
     ## start with sources
@@ -142,9 +139,6 @@ doparse <- function(dtype, filename, dbh, existing_names, worms_cache_directory,
     for (k in controlled_cols) checkvals(r[, k], k)
     if (dtype == "lipids") checkvals(r$measurement_class, "measurement_class")
     if (verbosity > 0) cat("done.\n")
-
-    ## find existing species names, if we've been given the handle to the database
-    if (length(existing_names) < 1 && !missing(dbh)) existing_names <- get_existing_names(dbh)
 
     ## first parse all taxa
     temp <- check_names(r$taxon_name, r$revised_taxon_name, existing_names = existing_names, cache_directory = worms_cache_directory, verbosity = verbosity, force = refresh_worms_cache)
@@ -295,7 +289,6 @@ get_cols_format <- function(filename, sheet_name, sheet_type) {
 #' Parse isotopes data spreadsheet
 #'
 #' @param filename string: path to Excel file
-#' @param dbh optional: database handle
 #' @param existing_names character: vector of existing taxon names
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
@@ -314,9 +307,8 @@ get_cols_format <- function(filename, sheet_name, sheet_type) {
 #' }
 #'
 #' @export
-parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+parse_isotopes <- function(filename, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
     ## check inputs
-    if (!missing(dbh)) assert_that(inherits(dbh, c("JDBCConnection", "OdbcConnection")))
     if (!file.exists(filename)) stop("file ", filename, " does not exist")
     if (missing(existing_names)) existing_names <- c()
 
@@ -373,9 +365,6 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
     controlled_cols <- c("isotopes_body_part_used", "taxon_breeding_stage", "taxon_sex", "taxon_life_stage", "taxon_mass_notes", "taxon_mass_units", "taxon_size_notes", "taxon_size_units", "delta_13C_variability_type", "delta_15N_variability_type", "C_N_ratio_variability_type", "C_N_ratio_type", "delta_34S_variability_type", "delta_15N_glutamic_acid_variability_type", "delta_15N_phenylalanine_variability_type", "isotopes_lipids_treatment","isotopes_carbonates_treatment") ##"isotopes_pretreatment"
     for (k in controlled_cols) checkvals(r[, k], k)
     if (verbosity > 0) cat("done.\n")
-
-    ## find existing species names, if we've been given the handle to the database
-    if (length(existing_names) < 1 && !missing(dbh)) existing_names <- get_existing_names(dbh)
 
     ## first parse all taxa
     temp <- check_names(r$taxon_name, r$revised_taxon_name, existing_names = existing_names, cache_directory = worms_cache_directory, verbosity = verbosity, force = refresh_worms_cache)
@@ -502,7 +491,6 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
 #' Parse DNA diet data spreadsheet
 #'
 #' @param filename string: path to Excel file
-#' @param dbh optional: database handle
 #' @param existing_names character: vector of existing taxon names
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
@@ -513,9 +501,8 @@ parse_isotopes <- function(filename, dbh, existing_names, worms_cache_directory 
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory = NULL, verbosity = 1, data_df, sources_df, refresh_worms_cache = FALSE) {
+parse_dna_diet <- function(filename, existing_names, worms_cache_directory = NULL, verbosity = 1, data_df, sources_df, refresh_worms_cache = FALSE) {
     ## check inputs
-    if (!missing(dbh)) assert_that(inherits(dbh, c("JDBCConnection", "OdbcConnection")))
     if (!missing(filename) && !file.exists(filename)) stop("file ", filename, " does not exist")
     ## can supply data and sources data.frames directly
     if (!missing(data_df)) assert_that(is.data.frame(data_df))
@@ -575,9 +562,6 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
     ## TODO: "forward_primer","reverse_primer","blocking_primer"
     for (k in controlled_cols) checkvals(r[, k], k)
     if (verbosity > 0) cat("done.\n")
-
-    ## find existing species names, if we've been given the handle to the database
-    if (length(existing_names) < 1 && !missing(dbh)) existing_names <- get_existing_names(dbh)
 
     ## first parse all taxa
     ru <- unique(r[, c("predator_name", "revised_predator_name")])
@@ -734,7 +718,6 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
 #' Parse diet data spreadsheet
 #'
 #' @param filename string: path to Excel file
-#' @param dbh database handle: optional
 #' @param existing_names character: vector of existing taxon names
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
@@ -753,9 +736,8 @@ parse_dna_diet <- function(filename, dbh, existing_names, worms_cache_directory 
 #'   x <- parse_diet(filename, worms_cache_directory = "~/.Rcache")
 #' }
 #' @export
-parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+parse_diet <- function(filename, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
     ## check inputs
-    if (!missing(dbh)) assert_that(inherits(dbh, c("JDBCConnection","OdbcConnection")))
     if (!file.exists(filename)) stop("file ", filename, " does not exist")
     if (missing(existing_names)) existing_names <- c()
 
@@ -810,9 +792,6 @@ parse_diet <- function(filename, dbh, existing_names, worms_cache_directory = NU
     controlled_cols <- c("predator_life_stage", "prey_life_stage", "predator_sex", "prey_sex", "identification_method", "consumption_rate_units", "predator_breeding_stage", "predator_size_units", "predator_mass_units", "prey_size_units", "prey_mass_units", "qualitative_dietary_importance", "prey_size_notes", "predator_size_notes", "prey_mass_notes", "predator_mass_notes", "prey_items_included", "accumulated_hard_parts_treatment")
     for (k in controlled_cols) checkvals(r[, k], k)
     if (verbosity > 0) cat("done.\n")
-
-    ## find existing species names, if we've been given the handle to the database
-    if (length(existing_names) < 1 && !missing(dbh)) existing_names <- get_existing_names(dbh)
 
     ## first parse all taxa
     ru <- unique(r[, c("predator_name", "revised_predator_name")])
