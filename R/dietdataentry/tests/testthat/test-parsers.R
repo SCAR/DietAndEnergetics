@@ -11,7 +11,8 @@ test_that("diet data parser works", {
 
 test_that("isotopes data parser works", {
     filename <- system.file("extdata/example_isotope_data.xls", package = "dietdataentry")
-    expect_warning(x <- parse_isotopes(filename), "unmatched names: Eudyptes chrysocome filholi")
+    chk <- capture.output(x <- parse_isotopes(filename))
+    expect_true(any(grepl("unmatched names:[[:space:]]+Eudyptes chrysocome filholi", chk)))
     expect_is(x, "list")
     expect_named(x, c("sources", "records", "raw"))
     expect_is(x$sources, "data.frame")
