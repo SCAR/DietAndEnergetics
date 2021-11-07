@@ -31,17 +31,20 @@ vocab <- function(thing) {
            measurement_name = c("ash content", "ash-free dry weight", "bell diameter", "carapace length", "carbon:nitrogen ratio", "carbohydrate content", "carbon content", "chitin content", "dry weight", "energy content", "lipid content", "lipid-free dry matter", "nitrogen content", "protein content", "sphere diameter", "skeletal ash content", "standard length", "total length", "wet weight", "water content",
                               "free fatty acid content", "triacylglycerol content", "diacylglycerol-ether content", "wax ester content",
                               "8:0 content", "10:0 content", "11:0 content", "12:0 content", "13:0 content", "14:0 content", "14:1 content", "14:1n-7 content", "14:1n-5 content", "15:1 content", "16:0 content", "16:1n-5 content", "16:1n-9 content", "16:2n-4 content", "16:4n-3 content", "17:0 content", "18:0 content", "16:1n-7 content", "16:1n-7t content", "18 1n-9 content", "18 1n-7 content", "18:2n-4 content", "18:3n-6 content", "18:3n-3 content", "20:1n-9 content", "20:1n-7 content", "20:1n-11 content", "22:1n-13+11 content", "22:1n-9 content", "24:1n-11 content", "24:1n-9 content", "18:2n-6 content", "18:4n-3 content", "20:0 content", "20:2n-6 content", "20:3n-6 content", "20:4n-3 content", "20:4n-6 content", "20:5n-3 content", "22:0 content", "22:2 content", "22:5n-3 content", "22:6n-3 content", "22:1n-11 content", "24:1n-7 content", "15:0 content", "i17:0 content", "i18:0 content", "17:1 content", "18:1n-9 content", "18:1n-7 content", "18:1n-5 content", "22:1n-7 content", "23:0 content", "24:0 content", "24:1 content",
-                              "other triacylglycerol fatty acid content", "other wax ester fatty alcohol content", "phytanate content",
+                              "i14:0 content","i15:0 content","a15:0 content","16:4 content","16:3 content","i16:0 content","16:1w9c content","16:1w7c content","16:1w7t content","16:1w5c content","16:1w13t content","16:0fald content","17:1w8c+a17:0 content","18:3w6 content","18:4w3 content","18:2w6 content","18:3w3 content","18:1w9c* content","18:1w7c content","18:1w7t content","18:1w5c content","18:1 content","19:1 content","19:0 content","20:4w6 content","20:5w3 content","20:3w6 content","20:4w3 content","c20pufa content","20:2w6 content","20:1w11c content","20:1w9c content","20:1w7c content","20:1w5c content","21:5w3 content","21:0 content","22:5w6 content","22:6w3 content","22:4w6 content","22:5w3 content","22:1w11c content","22:1w9c content","22:1w7c content","24:1w11c content","24:1w9c content","24:1w7c content",
+                              "other triacylglycerol fatty acid content", "other wax ester fatty alcohol content", "phytanate content", "phytanic acid content",
                               "other wax ester fatty acid content", "other lipid content", "polar lipid content", "sterol content", "saturated fatty acid content", "monounsaturated fatty acid content", "polyunsaturated fatty acid content", "other fatty acid content", "omega3 fatty acid", "omega6 fatty acid", "saturated fatty alcohol content", "monounsaturated fatty alcohol content", "polyunsaturated fatty alcohol content", "other fatty alcohol content", "omega3 fatty acid content", "omega6 fatty acid content" ## lipid measurements
                               ),
-           measurement_units = c("%", "%AFDW", "%DW", "%LFDW", "%WW", "cm", "g", "kcal/gDW", "kcal/gWW", "kJ", "kJ/gAFDW", "kJ/gWW", "kJ/gDW", "mm",
-                               ## lipid units
-                               "%FAW", ## %fatty acids, by weight
-                               "%FALCW", ## % fatty alcohols, by weight
-                               "%LW", ## %lipids, by weight
-                               "%TAGW", ## %triacylglycerols by weight ## for connan et al. 2007, should this be %TAGFAW?
-                               "%WEW" ## %wax esters, by weight ## similarly, %WEFAW?
-                               ),
+           measurement_units = c("%", "%AFDW", "%DW", "%LFDW", "%WW", "g", "kcal/gDW", "kcal/gWW", "kJ", "kJ/gAFDW", "kJ/gWW", "kJ/gDW", "mg/gDW",
+                                 ## lipid units
+                                 "cm", "mm", ## lengths
+                                 "%FAW", ## %fatty acids, by weight
+                                 "%FALCW", ## % fatty alcohols, by weight
+                                 "%LW", ## %lipids, by weight  ##CHECK has this been used as % dry weight or % wet weight?
+                                 "%LDW", ## % lipid dry weight
+                                 "%TAGW", ## %triacylglycerols by weight ## for connan et al. 2007, should this be %TAGFAW?
+                                 "%WEW" ## %wax esters, by weight ## similarly, %WEFAW?
+                                 ),
            measurement_class = c("fatty acid", "fatty alcohol", "lipid class", "triacylglycerol fatty acid", "wax ester fatty alcohol", "wax ester fatty acid"),
            stop("unrecognised vocabulary name: ", thing)
            )
