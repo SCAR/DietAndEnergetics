@@ -6,6 +6,7 @@
 \usage{
 parse_energetics(
   filename,
+  existing_names,
   worms_cache_directory = NULL,
   verbosity = 1,
   refresh_worms_cache = FALSE
@@ -13,6 +14,8 @@ parse_energetics(
 }
 \arguments{
 \item{filename}{string: path to Excel file}
+
+\item{existing_names}{character: vector of existing taxon names}
 
 \item{worms_cache_directory}{string: path to cache directory for taxonomic data}
 

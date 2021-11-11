@@ -60,6 +60,7 @@ tt_lookup <- function(nm, taxon_table, which = "name") {
 #' Parse energetics data spreadsheet
 #'
 #' @param filename string: path to Excel file
+#' @param existing_names character: vector of existing taxon names
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
 #' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
@@ -67,13 +68,14 @@ tt_lookup <- function(nm, taxon_table, which = "name") {
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_energetics <- function(filename, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
-    doparse("energetics", filename = filename, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
+parse_energetics <- function(filename, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+    doparse("energetics", filename = filename, existing_names = existing_names, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
 }
 
 #' Parse lipids data spreadsheet
 #'
 #' @param filename string: path to Excel file
+#' @param existing_names character: vector of existing taxon names
 #' @param worms_cache_directory string: path to cache directory for taxonomic data
 #' @param verbosity numeric: 0 = silent, > 0 = give progress messages
 #' @param refresh_worms_cache logical: if `TRUE`, refresh the taxonomic cache
@@ -81,8 +83,8 @@ parse_energetics <- function(filename, worms_cache_directory = NULL, verbosity =
 #' @return A list object with the parsed data
 #'
 #' @export
-parse_lipids <- function(filename, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
-    doparse("lipids", filename = filename, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
+parse_lipids <- function(filename, existing_names, worms_cache_directory = NULL, verbosity = 1, refresh_worms_cache = FALSE) {
+    doparse("lipids", filename = filename, existing_names = existing_names, worms_cache_directory = worms_cache_directory, verbosity = verbosity, refresh_worms_cache = refresh_worms_cache)
 }
 
 doparse <- function(dtype, filename, existing_names, worms_cache_directory, verbosity, refresh_worms_cache) {
