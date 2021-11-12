@@ -123,95 +123,100 @@ so_append_data <- function(new_data, existing_data, existing_sources, records_ty
                           "delta_15N_glutamic_acid_mean", "delta_15N_glutamic_acid_variability_value", "delta_15N_glutamic_acid_variability_type",
                           "delta_15N_phenylalanine_mean", "delta_15N_phenylalanine_variability_value", "delta_15N_phenylalanine_variability_type",
                           "C_N_ratio_mean", "C_N_ratio_variability_value", "C_N_ratio_variability_type", "C_N_ratio_type")
-        } else {
-            stop("mv not coded for ", records_type, " yet")
-        }
-
-        blah2 <- dplyr::select_at(new_data, setdiff(names(new_data), mmt_cols)) %>% mutate(measurement_name = NA_character_, measurement_min_value = NA_real_, measurement_max_value = NA_real_, measurement_mean_value = NA_real_, measurement_variability_value = NA_real_, measurement_variability_type = NA_character_, measurement_units = NA_character_, measurement_method = NA_character_)
-        newxi <- tibble()
-
-        for (k in seq_len(nrow(new_data))) {
-            newrows <- tibble()
-            if (!is.na(new_data$taxon_size_mean[k])) {
-                new_record_id <- new_record_id + 1
-                newrow <- blah2[k, ] %>% mutate(measurement_name = new_data$taxon_size_notes[k],
-                                                measurement_min_value = new_data$taxon_size_min[k],
-                                                measurement_max_value = new_data$taxon_size_max[k],
-                                                measurement_mean_value = new_data$taxon_size_mean[k],
-                                                measurement_variability_value = new_data$taxon_size_sd[k],
-                                                measurement_variability_type = "SD",
-                                                measurement_units = new_data$taxon_size_units[k],
-                                                isotopes_body_part_used = NA_character_,
-                                                isotopes_pretreatment = NA_character_,
-                                                isotopes_are_adjusted = NA_character_,
-                                                isotopes_adjustment_notes = NA_character_,
-                                                isotopes_carbonates_treatment = NA_character_,
-                                                isotopes_lipids_treatment = NA_character_,
-                                                record_id = new_record_id)
-                newrows <- bind_rows(newrows, newrow)
-            }
-
-            if (!is.na(new_data$taxon_mass_mean[k])) {
-                new_record_id <- new_record_id + 1
-                newrow <- blah2[k, ] %>% mutate(measurement_name = if (is.na(new_data$taxon_mass_notes[k])) "wet weight" else new_data$taxon_mass_notes[k],
-                                                measurement_min_value = new_data$taxon_mass_min[k],
-                                                measurement_max_value = new_data$taxon_mass_max[k],
-                                                measurement_mean_value = new_data$taxon_mass_mean[k],
-                                                measurement_variability_value = new_data$taxon_mass_sd[k],
-                                                measurement_variability_type = "SD",
-                                                measurement_units = new_data$taxon_mass_units[k],
-                                                isotopes_body_part_used = "whole organism",
-                                                isotopes_pretreatment = NA_character_,
-                                                isotopes_are_adjusted = NA_character_,
-                                                isotopes_adjustment_notes = NA_character_,
-                                                isotopes_carbonates_treatment = NA_character_,
-                                                isotopes_lipids_treatment = NA_character_,
-                                                record_id = new_record_id)
-                newrows <- bind_rows(newrows, newrow)
-            }
-
-            ## standard ones
-            for (mgv in c("delta_13C", "delta_15N", "delta_34S", "delta_15N_glutamic_acid", "delta_15N_phenylalanine")) {
-                if (!is.na(new_data[[paste0(mgv, "_mean")]][k])) {
+            blah2 <- dplyr::select_at(new_data, setdiff(names(new_data), mmt_cols)) %>% mutate(measurement_name = NA_character_, measurement_min_value = NA_real_, measurement_max_value = NA_real_, measurement_mean_value = NA_real_, measurement_variability_value = NA_real_, measurement_variability_type = NA_character_, measurement_units = NA_character_, measurement_method = NA_character_)
+            newxi <- tibble()
+            for (k in seq_len(nrow(new_data))) {
+                newrows <- tibble()
+                if (!is.na(new_data$taxon_size_mean[k])) {
                     new_record_id <- new_record_id + 1
-                    newrow <- blah2[k, ] %>% mutate(measurement_name = mgv,
-                                                    measurement_mean_value = new_data[[paste0(mgv, "_mean")]][k],
-                                                    measurement_variability_value = new_data[[paste0(mgv, "_variability_value")]][k],
-                                                    measurement_variability_type = new_data[[paste0(mgv, "_variability_type")]][k],
-                                                    measurement_units = "per mil",
+                    newrow <- blah2[k, ] %>% mutate(measurement_name = new_data$taxon_size_notes[k],
+                                                    measurement_min_value = new_data$taxon_size_min[k],
+                                                    measurement_max_value = new_data$taxon_size_max[k],
+                                                    measurement_mean_value = new_data$taxon_size_mean[k],
+                                                    measurement_variability_value = new_data$taxon_size_sd[k],
+                                                    measurement_variability_type = "SD",
+                                                    measurement_units = new_data$taxon_size_units[k],
+                                                    isotopes_body_part_used = NA_character_,
+                                                    isotopes_pretreatment = NA_character_,
+                                                    isotopes_are_adjusted = NA_character_,
+                                                    isotopes_adjustment_notes = NA_character_,
+                                                    isotopes_carbonates_treatment = NA_character_,
+                                                    isotopes_lipids_treatment = NA_character_,
                                                     record_id = new_record_id)
                     newrows <- bind_rows(newrows, newrow)
                 }
-            }
 
-            if (!is.na(new_data$C_N_ratio_mean[k])) {
-                this_mmt <- switch(new_data$C_N_ratio_type[k],
-                                   atomic = "C:N atomic ratio",
-                                   mass = "C:N mass ratio",
-                                   unknown = "C:N ratio (unknown basis)",
-                                   stop("CN ratio type?"))
-                if (is.na(new_data$C_N_ratio_type[k])) stop("check CN ratio")
-                new_record_id <- new_record_id + 1
-                newrow <- blah2[k,] %>% mutate(measurement_name = this_mmt,
-                                               measurement_mean_value = new_data$C_N_ratio_mean[k],
-                                               measurement_variability_value = new_data$C_N_ratio_variability_value[k],
-                                               measurement_variability_type = new_data$C_N_ratio_variability_type[k],
-                                               measurement_units = "",
-                                               record_id = new_record_id)
-                newrows <- bind_rows(newrows, newrow)
+                if (!is.na(new_data$taxon_mass_mean[k])) {
+                    new_record_id <- new_record_id + 1
+                    newrow <- blah2[k, ] %>% mutate(measurement_name = if (is.na(new_data$taxon_mass_notes[k])) "wet weight" else new_data$taxon_mass_notes[k],
+                                                    measurement_min_value = new_data$taxon_mass_min[k],
+                                                    measurement_max_value = new_data$taxon_mass_max[k],
+                                                    measurement_mean_value = new_data$taxon_mass_mean[k],
+                                                    measurement_variability_value = new_data$taxon_mass_sd[k],
+                                                    measurement_variability_type = "SD",
+                                                    measurement_units = new_data$taxon_mass_units[k],
+                                                    isotopes_body_part_used = "whole organism",
+                                                    isotopes_pretreatment = NA_character_,
+                                                    isotopes_are_adjusted = NA_character_,
+                                                    isotopes_adjustment_notes = NA_character_,
+                                                    isotopes_carbonates_treatment = NA_character_,
+                                                    isotopes_lipids_treatment = NA_character_,
+                                                    record_id = new_record_id)
+                    newrows <- bind_rows(newrows, newrow)
+                }
+
+                ## standard ones
+                for (mgv in c("delta_13C", "delta_15N", "delta_34S", "delta_15N_glutamic_acid", "delta_15N_phenylalanine")) {
+                    if (!is.na(new_data[[paste0(mgv, "_mean")]][k])) {
+                        new_record_id <- new_record_id + 1
+                        newrow <- blah2[k, ] %>% mutate(measurement_name = mgv,
+                                                        measurement_mean_value = new_data[[paste0(mgv, "_mean")]][k],
+                                                        measurement_variability_value = new_data[[paste0(mgv, "_variability_value")]][k],
+                                                        measurement_variability_type = new_data[[paste0(mgv, "_variability_type")]][k],
+                                                        measurement_units = "per mil",
+                                                        record_id = new_record_id)
+                        newrows <- bind_rows(newrows, newrow)
+                    }
+                }
+
+                if (!is.na(new_data$C_N_ratio_mean[k])) {
+                    this_mmt <- switch(new_data$C_N_ratio_type[k],
+                                       atomic = "C:N atomic ratio",
+                                       mass = "C:N mass ratio",
+                                       unknown = "C:N ratio (unknown basis)",
+                                       stop("CN ratio type?"))
+                    if (is.na(new_data$C_N_ratio_type[k])) stop("check CN ratio")
+                    new_record_id <- new_record_id + 1
+                    newrow <- blah2[k,] %>% mutate(measurement_name = this_mmt,
+                                                   measurement_mean_value = new_data$C_N_ratio_mean[k],
+                                                   measurement_variability_value = new_data$C_N_ratio_variability_value[k],
+                                                   measurement_variability_type = new_data$C_N_ratio_variability_type[k],
+                                                   measurement_units = "",
+                                                   record_id = new_record_id)
+                    newrows <- bind_rows(newrows, newrow)
+                }
+                if (nrow(newrows)>0) newxi <- bind_rows(newxi, newrows)
             }
-            if (nrow(newrows)>0) newxi <- bind_rows(newxi, newrows)
+        } else {
+            if (records_type %in% c("lipids")) {
+                newxi <- mutate(new_data, record_id = new_record_id + seq_len(nrow(new_data)))
+                new_record_id <- max(newxi$record_id, na.rm = TRUE)
+            } else {
+                stop("mv not coded for ", records_type, " yet")
+                ## the above should be fine for other mv types, just need to check
+            }
         }
 
         ## add soki group
-        if (records_type %in% c("isotopes")) {
+        if (records_type %in% c("isotopes", "lipids")) {
             newxi$taxon_group_soki <- NA_character_
         } else {
             stop("soki group(s) needed")
         }
 
-        col_order <- c(intersect(columns_order("isotopes"), names(newxi)), "source_details", "source_doi")
+        col_order <- c(intersect(columns_order(records_type), names(newxi)), "source_details", "source_doi")
         if (!all(names(newxi) %in% col_order)) {
+            print(setdiff(names(newxi), col_order))
             stop("columns dropped?")
         } else {
             newxi <- newxi[, col_order]
