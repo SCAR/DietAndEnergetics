@@ -16,8 +16,6 @@ library(lubridate)
 
 options(knitr.table.format="html", knitr.kable.NA="")
 
-current_doi <- so_doi()
-doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_blank\" rel=\"noopener noreferrer\">doi:", current_doi, "</a>")
 ```
 
 ```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
@@ -109,6 +107,12 @@ Access is also possible via the R packages <a href="https://github.com/SCAR/sohu
 
 ### Citing
 
+```{r}
+current_doi <- so_doi()
+doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_blank\" rel=\"noopener noreferrer\">doi:", current_doi, "</a>")
+
+```
+
 <img style="float:right;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/CC-BY_icon.svg/200px-CC-BY_icon.svg.png" />
 The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
 
@@ -124,7 +128,7 @@ Scientific Committee on Antarctic Research (`r format(Sys.Date(), "%Y")`) Southe
 
 However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
 
-Note: the database receives a new DOI each time it is updated, so that a particular citation can be tied to an exact version of the database.
+Note: the database receives a new DOI each time it is updated, so that a particular citation can be tied to an exact version of the database. If you are using the sohungry R package, use the command `so_doi()` to find the DOI of the data you are using.
 
 ### Software tools
 
@@ -164,7 +168,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Alison Cleary and colleagues (krill diet from gut DNA)
 - Marie Clee (data entry)
 - Sebastien Descamps and colleagues (Antarctic petrel diet and isotopes)
-- Nicole Hellessey (krill fatty acids/lipids)
+- Nicole Hellessey, Jessica Ericson (krill fatty acids and lipids)
 - Chaolun Li and colleagues (zooplankton lipids and stable isotopes)
 - S&iacute;lvia Louren&ccedil;o, Ryan Saunders, and colleagues (<i>Krefftichthys</i> diet)
 - Julie McInnes (albatross diet and stable isotopes)
@@ -176,6 +180,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Megan Tierney (Macquarie Island fish energetics)
 - Anton van de Putte, Filip Volckaert (energetics)
 - Christine Weldrick, Rowan Trebilco, Kerrie Swadling (pteropod stable isotopes)
+- Jos&eacute; Xavier (squid beak isotopes and albatross diet)
 
 
 ## References
