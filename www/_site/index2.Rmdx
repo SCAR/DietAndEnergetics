@@ -1,0 +1,447 @@
+---
+title: "Southern Ocean Diet and Energetics Database"
+---
+
+<link rel="stylesheet" href="css/soded.css" type="text/css" />
+
+
+```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+library(sohungry)
+library(solong)
+library(shiny)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(lubridate)
+requireNamespace("circular")
+
+knitr::opts_chunk$set(eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = TRUE, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup")
+options(knitr.table.format="html", knitr.kable.NA="")
+
+```
+
+```{r calcs}
+cache_dir <- tempdir()
+
+xd <- so_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xd <- xd %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
+
+xdna <- so_dna_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+xdna <- xdna %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
+xi <- so_isotopes(format = "mv", cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xi <- xi %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
+xe <- so_energetics(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xe <- xe %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
+xl <- so_lipids(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+xl <- xl %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
+xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
+  xdna %>% dplyr::select(source_id, source_details, source_doi),
+  xi %>% dplyr::select(source_id, source_details, source_doi),
+  xl %>% dplyr::select(source_id, source_details, source_doi),
+  xe %>% dplyr::select(source_id, source_details, source_doi)) %>%
+  distinct %>% dplyr::arrange(source_id) %>%
+  ##mutate(source_details=stringi::stri_trans_general(source_details, id = "latin-ascii")) %>%
+  dplyr::rename("Source ID"=source_id, Details=source_details, DOI=source_doi) %>%
+  dplyr::mutate(DOI=case_when(grepl("^10\\.", DOI)~DOI,##paste0("https://doi.org/", DOI),
+    is.na(DOI)~"",
+    TRUE~DOI))
+
+all_stats <- bind_rows(xd %>% dplyr::summarize("Data type" = "Dietary sample data (gut content, etc)", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xdna %>% dplyr::summarize("Data type" = "DNA diet data", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xi %>% dplyr::summarize("Data type" = "Stable isotopes", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xl %>% dplyr::summarize("Data type" = "Lipids", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xe %>% dplyr::summarize("Data type" = "Energetics", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  sol_equations() %>% dplyr::summarize("Data type" = "Allometric equations", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(reference))##, "Last updated"=max(last_modified)
+)
+```
+
+# {.tabset}
+
+Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on <a href="http://www.scar.org/ssg/life-sciences/eg-abi" target="_blank" rel="noopener noreferrer">Antarctic Biodiversity Informatics (EG-ABI)</a> and <a href="http://www.scar.org/ssg/life-sciences/bamm" target="_blank" rel="noopener noreferrer">Birds and Marine Mammals (EG-BAMM)</a> are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
+
+<div style="height: 20px;"></div>
+
+## Overview
+
+`r kable(all_stats, format="html", caption="<h3>Current status</h3>") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+
+
+<div style="margin-left: auto; margin-right: auto; margin-top: 50px; width: 80%;">
+```{r leaf}
+library(leaflet)
+
+tempd <- xd %>% dplyr::filter(!is.na(.data$lon)) %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+## formatted popup HTML
+popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
+
+tempdna <- xdna %>% dplyr::filter(!is.na(.data$lon)) %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
+popup_dna <- sprintf("<p><strong>DNA diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempdna$source_id, tempdna$predator_name, tempdna$N)
+
+tempi <- xi %>% dplyr::filter(!is.na(.data$lon)) %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L) %>% ungroup
+popup_i <- sprintf("<p><strong>Isotope study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempi$source_id, tempi$taxon_name, tempi$N)
+
+##tempi <- st_as_sf(tempi, coords = c("lon", "lat"), crs = "+proj=longlat")
+##psproj <- "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"
+##tempi <- st_transform(tempi, psproj)
+##tempi <- tempi %>% dplyr::rename(Taxon = "taxon_name", "N records" = "N", East = "east", West = "west", South = "south", North = "north", Source = "source_details", "Source DOI" = "source_doi")
+
+##tempd <- st_as_sf(tempd, coords = c("lon", "lat"), crs = "+proj=longlat")
+##tempd <- st_transform(tempd, psproj)
+##tempd <- tempd %>% dplyr::rename(Predator = "predator_name", Prey = "prey_name", "N records" = "N", East = "east", West = "west", South = "south", North = "north", Source = "source_details", "Source DOI" = "source_doi")
+
+
+##ramp2 <- grDevices::colorRampPalette(c("#54A3D1", "#60B3EB", "#78C8F0", "#98D1F5", "#B5DCFF", "#BDE1F0", "#CDEBFA", "#D6EFFF", "#EBFAFF","grey99", "grey90", "grey92", "grey94", "grey96", "white"))
+##bx <- SOmap::Bathy
+##values(bx) <- round(values(bx) / 10) * 10
+##
+##bluepal <- ramp2(length(unique(na.omit(values(bx)))))
+##
+####mapview(SOmap::Bathy, native.crs = TRUE, col.regions = bluepal, legend = FALSE, layer.name = "Bathymetry", homebutton = FALSE) +
+##    mapview(SOmap_data$ant_coast_land, native.crs = TRUE, color = "black", col.regions = "white", popup = FALSE, highlight = FALSE, label = FALSE, legend = FALSE, homebutton = FALSE, layer.name = "Land (Antarctica)") +
+##    mapView(SOmap_data$GSHHS_i_L1, native.crs = TRUE, color = "black", col.regions = "white", popup = FALSE, highlight = FALSE, label = FALSE, legend = FALSE, homebutton = FALSE, layer.name = "Land (other)") +
+##    mapview(SOmap_data$ant_coast_ice, native.crs = TRUE, color = "black", col.regions = "white", popup = FALSE, highlight = FALSE, label = FALSE, legend = FALSE, homebutton = FALSE, layer.name = "Ice sheets and shelves") +
+##    mapview(tempi, native.crs = TRUE, homebutton = FALSE, popup = c("Taxon", "East", "West", "South", "North", "N records", "Source", "Source DOI"), layer.name = "Stable isotope records") +
+##    mapview(tempd, native.crs = TRUE, homebutton = FALSE, popup = c("Predator", "Prey", "East", "West", "South", "North", "N records", "Source", "Source DOI"), layer.name = "Diet records", color = "red", col.regions = "red")
+
+
+tempe <- xe %>% dplyr::filter(!is.na(.data$lon)) %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_e <- sprintf("<p><strong>Energetics study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",tempe$source_id, tempe$taxon_name, tempe$N)
+
+templ <- xl %>% dplyr::filter(!is.na(.data$lon)) %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
+popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",templ$source_id, templ$taxon_name, templ$N)
+
+m <- leaflet(width="100%") %>%
+  addProviderTiles("Esri.WorldImagery") %>%
+  addMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", clusterOptions=markerClusterOptions(), popup=popup_d) %>% ##, label=tempd$place_name
+  addMarkers(lng=tempdna$lon, lat=tempdna$lat, group="dna_diet", clusterOptions=markerClusterOptions(), popup=popup_dna) %>%
+  addMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
+  addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
+  addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
+m
+
+
+
+## resolutions <- c(8192, 4096, 2048, 1024, 512, 256)
+## zoom <- 0
+## maxZoom <- 5
+## 
+## #border <- geojsonio::geojson_read(system.file("examples/Seamask_medium_res_polygon.kml", package = "leaflet"), what = "sp")
+## #points <-  geojsonio::geojson_read(system.file("examples/Historic_sites_and_monuments_point.kml", package = "leaflet"), what = "sp")
+## 
+## crsAntartica <-  leafletCRS(
+##   crsClass = "L.Proj.CRS",
+##   code = "EPSG:3031",
+##   proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs",
+##   resolutions = resolutions,
+##   origin = c(-4194304, 4194304),
+##   bounds =  list( c(-4194304, -4194304), c(4194304, 4194304) )
+## )
+## 
+## antarticaTilesURL <- "https://map1{s}.vis.earthdata.nasa.gov/wmts-antarctic/MODIS_Aqua_CorrectedReflectance_TrueColor/default/2014-12-01/EPSG3031_250m/{z}/{y}/{x}.jpg"
+## 
+## ## https://geos.polarview.aq/geoserver/polarview/wms?service=WMS&version=1.1.0&request=GetMap&layers=polarview:antarctic_hillshade_and_bathymetry&styles=&bbox=-9049000.000325475,-9049000.000325475,9049000.000325475,9049000.000325475&width=768&height=768&srs=EPSG:3031&format=image%2Fjpeg
+## 
+## leaflet(options = leafletOptions(
+##   crs = crsAntartica, minZoom = zoom, maxZoom = maxZoom, worldCopyJump = FALSE)) %>%
+##   setView(0, -90, 0) %>%
+## #  addPolygons(data = border, color = "#ff0000", weight = 2, fill = FALSE) %>%
+## #  addCircleMarkers(data = points, label = ~Name) %>%
+##   addTiles(urlTemplate = antarticaTilesURL,
+##            layerId = "antartica_tiles",
+##            attribution = "<a href='https://earthdata.nasa.gov/gibs'> NASA EOSDIS GIBS</a>&nbsp;&nbsp;&nbsp; <a href='https://github.com/nasa-gibs/web-examples/blob/release/leaflet/js/antarctic-epsg3031.js'> View Source </a>",
+##            options = tileOptions(
+##              tileSize = 512,
+##              subdomains = "abc",
+##              noWrap = TRUE,
+##              continuousWorld = TRUE,
+##              format = "image%2Fjpeg"
+##            )) %>%
+##   addGraticule() %>%
+##   htmlwidgets::onRender(
+##     "function(el, t){
+##        var myMap = this;
+##        debugger;
+##        var tileLayer = myMap.layerManager._byLayerId['tile\\nantartica_tiles'];
+## 
+##        // HACK: BEGIN
+##        // Leaflet does not yet handle these kind of projections nicely. Monkey
+##        // patch the getTileUrl function to ensure requests are within
+##        // tile matrix set boundaries.
+##        var superGetTileUrl = tileLayer.getTileUrl;
+## 
+##        tileLayer.getTileUrl = function(coords) {
+##          debugger;
+##          var max = Math.pow(2, tileLayer._getZoomForUrl() + 1);
+##          if ( coords.x < 0 ) { return ''; }
+##          if ( coords.y < 0 ) { return ''; }
+##          if ( coords.x >= max ) { return ''; }
+##          if ( coords.y >= max ) { return ''; }
+##            return superGetTileUrl.call(tileLayer, coords);
+##        };
+##        // HACK: END
+##     }") %>%
+##     addMarkers(~lon, ~lat, data = tempi)
+## 
+## 
+## 
+##
+## from robis
+
+resolutions <- c(48310.14147851562, 24155.07073925781, 12077.535369628906, 6038.767684814453, 3019.3838424072264, 1509.6919212036132, 754.8459606018066, 377.4229803009033, 188.71149015045165, 94.35574507522583, 47.17787253761291, 23.588936268806457, 11.794468134403228, 5.897234067201614, 2.948617033600807, 1.4743085168004035, 0.7371542584002018)
+     minZoom <- 1
+     maxZoom <- 16
+     extent <- 12367396.2185
+     crsAntartica <- leafletCRS(
+       crsClass = "L.Proj.CRS",
+       code = "EPSG:3031",
+       proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+       resolutions = resolutions,
+       origin = c(-extent, extent),
+       bounds = list( c(-extent, -extent), c(extent, extent) )
+     )
+     m <- leaflet(data, options = leafletOptions(crs = crsAntartica, minZoom = minZoom, maxZoom = maxZoom)) %>%
+       setView(0, -90, 0) %>%
+       addTiles(
+         urlTemplate = "https://tile.gbif.org/3031/omt/{z}/{x}/{y}@1x.png?style=osm-bright",
+         attribution = "OpenStreetMap | GBIF",
+         layerId = "antartica_tiles",
+         options = tileOptions(
+           tileSize = 512,
+           noWrap = TRUE,
+           continuousWorld = TRUE
+         )) %>%
+         addMarkers(~lon, ~lat, data = tempi %>% dplyr::filter(!is.na(lon)))
+
+##       addCircleMarkers(~decimalLongitude, ~decimalLatitude, popup = p, radius = 3, weight = 1, fillColor = color, color = color, opacity = 1, fillOpacity = 0.1)
+##     return(m)
+## 
+## 
+## 
+## 
+## 
+## 
+## 
+ext <- 4194304# * 1.5
+crsAntartica <-  leafletCRS(
+  crsClass = 'L.Proj.CRS',
+  code = 'EPSG:3031',
+  proj4def = '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
+  resolutions = c(8192, 4096, 2048, 1024, 512, 256),
+  origin = c(-ext, ext),
+  bounds =  list( c(-ext, -ext), c(ext, ext) )
+)
+
+
+
+
+
+
+## working but only to 50S
+resolutions <- c(67733.46880027094, 33866.73440013547, 16933.367200067736, 8466.683600033868, 4233.341800016934, 2116.670900008467, 1058.3354500042335, 529.1677250021168, 264.5838625010584)
+     minZoom <- 2
+     maxZoom <- 8
+     crsAntartica <- leafletCRS(
+       crsClass = "L.Proj.CRS",
+       code = "EPSG:3031",
+       proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+       resolutions = resolutions,
+       origin = c(-3.06361E7, 3.0636099999999993E7),
+       bounds = list(c(-4524583.19363305, -4524449.487765655), c(4524449.4877656475, 4524583.193633042))
+     )
+leaflet(options = leafletOptions(crs = crsAntartica, minZoom = minZoom, maxZoom = maxZoom)) %>%
+     leaflet.esri::addEsriTiledMapLayer("https://tiles.arcgis.com/tiles/C8EMgrsFcRFL6LrL/arcgis/rest/services/Antarctic_Basemap/MapServer") %>%
+       setView(0, -90, 0) %>%
+     addMarkers(~lon, ~lat, data = tempi)
+
+
+## also only to 50?
+resolutions <- c(238810.81335399998, 119405.40667699999, 59702.70333849987, 29851.351669250063, 14925.675834625032, 7462.837917312516, 3731.4189586563907, 1865.709479328063, 932.8547396640315, 466.42736983214803, 233.21368491607402, 116.60684245803701, 58.30342122888621, 29.151710614575396, 14.5758553072877, 7.28792765351156, 3.64396382688807, 1.82198191331174, 0.910990956788164, 0.45549547826179, 0.227747739130895, 0.113873869697739, 0.05693693484887, 0.028468467424435)
+ext <- 3.0635955947272874E7
+     minZoom <- 2
+     maxZoom <- 23
+     crsAntartica <- leafletCRS(
+       crsClass = "L.Proj.CRS",
+       code = "EPSG:3031",
+       proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+       resolutions = resolutions,
+       origin = c(-ext, ext),
+       bounds = list(c(-ext, -ext), c(ext, ext))
+     )
+leaflet(options = leafletOptions(crs = crsAntartica, minZoom = minZoom, maxZoom = maxZoom)) %>%
+     leaflet.esri::addEsriTiledMapLayer("https://services.arcgisonline.com/arcgis/rest/services/Polar/Antarctic_Imagery/MapServer") %>%
+       setView(0, -90, 0) %>%
+     addMarkers(~lon, ~lat, data = tempi)
+
+
+
+
+
+## using our own tiles
+
+##BoundingBox minx="-5792044.55272820219398" miny="-5791955.44727179035544" maxx="5791955.44727179780602" maxy="5792044.55272820964456"/>
+##          <Origin x="-5792044.55272820219398" y="-5791955.44727179035544"/>
+##          <TileFormat width="256" height="256" mime-type="image/png" extension="png"/>
+##          <TileSets profile="raster">
+##            <TileSet href="1" units-per-pixel="32000.00000000000000" order="1"/>
+##            <TileSet href="2" units-per-pixel="16000.00000000000000" order="2"/>
+##            <TileSet href="3" units-per-pixel="8000.00000000000000" order="3"/>
+##            <TileSet href="4" units-per-pixel="4000.00000000000000" order="4"/>
+##            <TileSet href="5" units-per-pixel="2000.00000000000000" order="5"/>
+##            <TileSet href="6" units-per-pixel="1000.00000000000000" order="6"/>
+##            <TileSet href="7" units-per-pixel="500.00000000000000" order="7"/>
+
+
+     minZoom <- 1
+     maxZoom <- 7
+     crsAntartica <- leafletCRS(
+       crsClass = "L.Proj.CRS",
+       code = "EPSG:3031",
+       proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
+       resolutions = c(32e3, 16e3, 8e3, 4e3, 2e3, 1e3, 500),
+       origin = c(-5792044.55272820219398, 5791955.44727179780602),
+       bounds = list(c(-5792044.55272820219398, -5791955.44727179035544), c(5791955.44727179780602, 5792044.55272820964456))
+     )
+leaflet(options = leafletOptions(crs = crsAntartica, minZoom = minZoom, maxZoom = maxZoom)) %>%
+       addTiles(
+         urlTemplate = "http://localhost:4321/{z}/{x}/{y}.png",
+         attribution = "Hahahaha | Ha",
+         layerId = "quant",
+         options = tileOptions(
+           tileSize = 512,
+           noWrap = TRUE,
+           continuousWorld = TRUE
+         )) %>%
+    setView(0, -90, 0)
+
+
+
+
+
+
+
+
+## 
+## lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
+## 
+## 
+## 
+## leaflet(options = leafletOptions(crs = crsAntartica, minZoom = 0)) %>% ##maxZoom=maxZoom, worldCopyJump = FALSE)) %>%
+##     addWMSTiles(baseUrl="https://maps.environments.aq/mapcache/antarc/?",
+##                 layers="antarc_text",#ramp_bath_shade_mask",
+##                 options=WMSTileOptions(format="image/png",transparent=TRUE),
+##                 attribution="")
+
+crsAntartica <-  leafletCRS(
+  crsClass = 'L.Proj.CRS',
+  code = 'EPSG:3031',
+  proj4def = '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
+  resolutions = c(8192, 4096, 2048, 1024, 512, 256),
+  origin = c(-5559199.369, 4380033.589),
+  bounds =  list( c(-5559199.369, -5783491.113), c(4380033.589, 3987228.921))
+)
+leaflet(options = leafletOptions(crs = crsAntartica, minZoom = 0, maxZoom = 5)) %>%
+    addWMSTiles(baseUrl="https://geos.polarview.aq/geoserver/polarview/wms?", ##service=WMS&version=1.1.0&request=GetMap&layers=polarview:coastS10&styles=&bbox=-5559199.369,-5783491.113,4380033.589,3987228.921&width=768&height=754&srs=EPSG:3031&format=image%2Fjpeg
+                layers = "polarview:coastS10",
+                options = WMSTileOptions(format = "image/png", transparent = TRUE),
+                attribution = "")
+
+
+
+```
+</div>
+
+
+## Data access
+
+Detailed data information can be found in the <a href="https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics" target="_blank" rel="noopener noreferrer">metadata record</a>, and the data can be downloaded from <a href="https://zenodo.org/record/3973742" target="_blank" rel="noopener noreferrer">Zenodo</a>.
+
+Access is also possible via the R packages <a href="https://github.com/SCAR/sohungry" target="_blank" rel="noopener noreferrer">sohungry</a> (for data) and <a href="https://github.com/SCAR/solong" target="_blank" rel="noopener noreferrer">solong</a> (for allometric equations).
+
+### Citing
+
+```{r doi}
+current_doi <- so_doi()
+doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_blank\" rel=\"noopener noreferrer\">doi:", current_doi, "</a>")
+
+```
+
+<img style="float:right;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/CC-BY_icon.svg/200px-CC-BY_icon.svg.png" />
+The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
+
+<div style="padding-left: 2em;">
+Smith J (2008) On the use of stable isotopes. *Journal of Stable Isotope Stuff* **123**:100&ndash;110. Data obtained from the SCAR Southern Ocean Diet and Energetics Database, `r doi_link_md`
+</div>
+
+If you have used data from many individual sources, the overall citation for this database is:
+
+<div style="padding-left: 2em;">
+Scientific Committee on Antarctic Research (`r format(Sys.Date(), "%Y")`) Southern Ocean Diet and Energetics Database. `r doi_link_md`
+</div>
+
+However, you are encouraged to cite all primary sources (possibly in supplementary material, if there are many).
+
+Note: the database receives a new DOI each time it is updated, so that a particular citation can be tied to an exact version of the database. If you are using the sohungry R package, use the command `so_doi()` to find the DOI of the data you are using.
+
+### Software tools
+
+As well as providing data access, the R packages mentioned above also provide functionality for working with these data. See the package home pages for more information: <a href="https://github.com/SCAR/sohungry" target="_blank" rel="noopener noreferrer">sohungry</a> (for data) and <a href="https://github.com/SCAR/solong" target="_blank" rel="noopener noreferrer">solong</a>.
+
+### See also
+
+The <a href="https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html" target="_blank" rel="noopener noreferrer">project update</a> presented at the <a href="http://www.measo2018.aq/" target="_blank" rel="noopener noreferrer">MEASO 2018 conference</a> that was held in Hobart, April 2018.
+
+
+## People
+
+Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to <a href="http://www.scar.org/eg-abi/abi-contact" target="_blank" rel="noopener noreferrer">make contact</a>.
+
+### Core project working group
+
+- Antonio Ag&uuml;era (Universit&eacute; libre de Bruxelles, Belgium)
+- Claudia Andrade (Instituto de la Patagonia, Universidad de Magallanes)
+- Ma&euml;lle Connan (Nelson Mandela Metropolitan University, South Africa)
+- Hauke Flores (Alfred Wegener Institute, Germany)
+- Yi-Ming Gan (Royal Belgian Institute of Natural Sciences, Belgium)
+- Luis H&uuml;ckst&auml;dt (University of California Santa Cruz, USA)
+- Mary-Anne Lea (Institute for Marine and Antarctic Studies, Australia)
+- Julie McInnes (Institute for Marine and Antarctic Studies, Australia)
+- Ben Raymond (Australian Antarctic Division, Australia)
+- Fokje Schaafsma (Institute for Marine Resources & Ecosystem Studies, Netherlands)
+- Gabriele Stowasser (British Antarctic Survey, United Kingdom)
+- Rowan Trebilco (Institute for Marine and Antarctic Studies, Australia)
+- Anton van de Putte (Royal Belgian Institute of Natural Sciences, Belgium)
+- Andrea Walters (Institute for Marine and Antarctic Studies, Australia)
+- Jos&eacute; Xavier (University of Coimbra, Portugal, and British Antarctic Survey, United Kingdom)
+
+### Data contributors
+
+- Claudia Andrade, Thomas Brey, and colleagues (subantarctic South American isotopes and diet)
+- Australian Antarctic Data Centre (the Southern Ocean dietary database was used to seed this new, larger database effort)
+- Laurence Clarke and colleagues (mesopelagic fish diet from gut DNA)
+- Alison Cleary and colleagues (krill diet from gut DNA)
+- Marie Clee (data entry)
+- Sebastien Descamps and colleagues (Antarctic petrel diet and isotopes)
+- Nicole Hellessey, Jessica Ericson (krill fatty acids and lipids)
+- Chaolun Li and colleagues (zooplankton lipids and stable isotopes)
+- S&iacute;lvia Louren&ccedil;o, Ryan Saunders, and colleagues (<i>Krefftichthys</i> diet)
+- Julie McInnes (albatross diet and stable isotopes)
+- Lo&iuml;c Michel, Gilles Lepoint, and colleagues (benthic stable isotopes)
+- Baptiste Le Bourg, Camille Moreau, Gilles Lepoint, Lo&iuml;c Michel (sea star isotopes and morphological measurements)
+- Ryan Reisinger (Marion Island stable isotopes)
+- Fokje Schaafsma and colleagues (energetics)
+- Arnaud Tarroux, Kit Kovacs, and colleagues (seal and penguin stable isotopes)
+- Megan Tierney (Macquarie Island fish energetics)
+- Anton van de Putte, Filip Volckaert (energetics)
+- Christine Weldrick, Rowan Trebilco, Kerrie Swadling (pteropod stable isotopes)
+- Jos&eacute; Xavier (squid beak isotopes and albatross diet)
+
+
+## References
+
+`r kable(xs, format="html") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+

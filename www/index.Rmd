@@ -5,7 +5,7 @@ title: "Southern Ocean Diet and Energetics Database"
 <link rel="stylesheet" href="css/soded.css" type="text/css" />
 
 
-```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = FALSE, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup"}
+```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 library(sohungry)
 library(solong)
 library(shiny)
@@ -13,27 +13,52 @@ library(knitr)
 library(kableExtra)
 library(dplyr)
 library(lubridate)
+library(leaflet)
+requireNamespace("circular")
 
+## do we need to update caches?
+refresh_cache <- !any(difftime(Sys.time(), file.info(dir("index_cache/html", pattern = "^calcs_", full.names = TRUE))$mtime, units = "days") > 30)
+
+knitr::opts_chunk$set(eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = refresh_cache, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup")
 options(knitr.table.format="html", knitr.kable.NA="")
+
+##map_style <- "polar"
+map_style <- "mercator"
+stopifnot(map_style %in% c("polar", "mercator"))
 
 ```
 
-```{r calcs,eval=TRUE,echo=FALSE,message=TRUE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
+```{r calcs}
 cache_dir <- tempdir()
 xd <- so_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
-xd <- xd %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+xd <- xd %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+
 
 xdna <- so_dna_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
-xdna <- xdna %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+xdna <- xdna %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
 
 xi <- so_isotopes(format = "mv", cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xi <- xi %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+xi <- xi %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
 
 xe <- so_energetics(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xe <- xe %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+xe <- xe %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
 
 xl <- so_lipids(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
-xl <- xl %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+xl <- xl %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lat = (north+south)/2) %>% group_by(east, west) %>% mutate(lon = as.numeric(circular::mean.circular(circular::circular(c(.data$east[1], .data$west[1])/180*pi))/pi*180)) %>% ungroup
+##xd <- so_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+##xd <- xd %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+##
+##xdna <- so_dna_diet(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, predator_name, prey_name, last_modified, source_details, source_doi)
+##xdna <- xdna %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+##
+##xi <- so_isotopes(format = "mv", cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+##xi <- xi %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+##
+##xe <- so_energetics(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+##xe <- xe %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
+##
+##xl <- so_lipids(cache_directory = cache_dir) %>% dplyr::select(source_id, east, west, north, south, taxon_name, last_modified, source_details, source_doi)
+##xl <- xl %>% mutate(last_modified = as.Date(ymd_hms(last_modified)), lon = (east+west)/2, lat = (north+south)/2)
 
 xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
   xdna %>% dplyr::select(source_id, source_details, source_doi),
@@ -54,6 +79,7 @@ all_stats <- bind_rows(xd %>% dplyr::summarize("Data type" = "Dietary sample dat
   xe %>% dplyr::summarize("Data type" = "Energetics", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
   sol_equations() %>% dplyr::summarize("Data type" = "Allometric equations", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(reference))##, "Last updated"=max(last_modified)
 )
+
 ```
 
 # {.tabset}
@@ -68,9 +94,7 @@ Information related to diet and energy flow is fundamental to a diverse range of
 
 
 <div style="margin-left: auto; margin-right: auto; margin-top: 50px; width: 80%;">
-```{r leaf,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,tidy=FALSE,cache=FALSE,include=TRUE,dpi=72,fig.width=7,fig.height=7,fig.align="center",results="markup"}
-library(leaflet)
-
+```{r leaf, cache = FALSE}
 tempd <- xd %>% group_by(source_id, lon, lat, predator_name) %>% mutate(N=n()) %>% slice(1L)
 ## formatted popup HTML
 popup_d <- sprintf("<p><strong>Diet study:</strong> %d<br /><strong>Predator:</strong> %s<br /><strong>N records:</strong> %d</p>",tempd$source_id, tempd$predator_name, tempd$N)
@@ -87,14 +111,51 @@ popup_e <- sprintf("<p><strong>Energetics study:</strong> %d<br /><strong>Taxon:
 templ <- xl %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% slice(1L)
 popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",templ$source_id, templ$taxon_name, templ$N)
 
-m <- leaflet(width="100%") %>%
-  addProviderTiles("Esri.WorldImagery") %>%
-  addMarkers(lng=tempd$lon, lat=tempd$lat, group="diet", clusterOptions=markerClusterOptions(), popup=popup_d) %>% ##, label=tempd$place_name
-  addMarkers(lng=tempdna$lon, lat=tempdna$lat, group="dna_diet", clusterOptions=markerClusterOptions(), popup=popup_dna) %>%
-  addMarkers(lng=tempi$lon, lat=tempi$lat, group="isotopes", clusterOptions=markerClusterOptions(), popup=popup_i) %>%
-  addMarkers(lng=templ$lon, lat=templ$lat, group="lipids", clusterOptions=markerClusterOptions(), popup=popup_l) %>%
-  addMarkers(lng=tempe$lon, lat=tempe$lat, group="energetics", clusterOptions=markerClusterOptions(), popup=popup_e)
-m	
+if (map_style == "polar") {
+    crsAntartica <-  leafletCRS(
+        crsClass = "L.Proj.CRS",
+        code = "EPSG:3031",
+        proj4def = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs",
+        resolutions = c(0,78271.484, 33072.9828126323, 16536.49140631615, 8268.245703158074, 4134.122851579037, 2067.0614257895186, 1033.5307128947593, 516.7653564473796, 258.3826782236898, 129.1913391118449, 64.59566955592246, 32.29783477796123, 16.148917388980614),
+        origin = c(-8929486, 6564912),
+        bounds = list(c(-8188583, -8191390), c(8176112, 8183594))
+    )
+    minz <- 0; maxz <- 11; initz <- 3
+    att <- "<a href = 'https://data.aad.gov.au/map-attribution'>Attribution</a>"
+    tile_url <- "https://data.aad.gov.au/mbtileserver/services/tiles-newmap-12layers/tiles/{z}/{x}/{y}.png"
+    tile_format <- "image%2Fpng"
+
+    cluster_options <- markerClusterOptions(removeOutsideVisibleBounds = FALSE) ## visible bounds don't work properly with projected coords
+    m <- leaflet(options = leafletOptions(crs = crsAntartica, minZoom = minz, maxZoom = maxz, worldCopyJump = FALSE)) %>%
+        setView(0, -90, initz) %>%
+        addTiles(urlTemplate = tile_url, layerId = "antartica_tiles", attribution = att,
+                 options = tileOptions(tileSize = 256, subdomains = "abc", noWrap = TRUE, continuousWorld = TRUE, format = tile_format)) %>%
+        htmlwidgets::onRender("function(el, t) {
+          L.graticule({ intervalLat: 10, intervalLng: 30, latBounds: [-90,-40], centerLonLabels:true }).addTo(this);
+          var tileLayer = this.layerManager._byLayerId['tile\\nantartica_tiles'];
+          // Leaflet does not yet handle these kind of projections nicely.
+          // Patch the getTileUrl function to ensure requests are within tile matrix set boundaries.
+          var superGetTileUrl = tileLayer.getTileUrl;
+          tileLayer.getTileUrl = function(coords) {
+            var max = Math.pow(2, tileLayer._getZoomForUrl() + 1);
+            if ( coords.x < 0 ) { return ''; }
+            if ( coords.y < 0 ) { return ''; }
+            if ( coords.x > max ) { return ''; }
+            if ( coords.y > max ) { return ''; }
+            return superGetTileUrl.call(tileLayer, coords);
+          };
+       }")
+} else {
+    cluster_options <- markerClusterOptions()
+    m <- leaflet(width="100%") %>% addProviderTiles("Esri.WorldImagery")
+}
+
+m %>% addMarkers(lng = tempd$lon, lat = tempd$lat, group = "diet", clusterOptions = cluster_options, popup = popup_d) %>% ##, label=tempd$place_name
+    addMarkers(lng = tempdna$lon, lat = tempdna$lat, group = "dna_diet", clusterOptions = cluster_options, popup = popup_dna) %>%
+    addMarkers(lng = tempi$lon, lat = tempi$lat, group = "isotopes", clusterOptions = cluster_options, popup = popup_i) %>%
+    addMarkers(lng = templ$lon, lat = templ$lat, group = "lipids", clusterOptions = cluster_options, popup = popup_l) %>%
+    addMarkers(lng = tempe$lon, lat = tempe$lat, group = "energetics", clusterOptions = cluster_options, popup = popup_e)
+
 ```
 </div>
 
@@ -107,13 +168,13 @@ Access is also possible via the R packages <a href="https://github.com/SCAR/sohu
 
 ### Citing
 
-```{r}
+```{r doi}
 current_doi <- so_doi()
 doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_blank\" rel=\"noopener noreferrer\">doi:", current_doi, "</a>")
 
 ```
 
-<img style="float:right;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/CC-BY_icon.svg/200px-CC-BY_icon.svg.png" />
+<img style="float:right;" src="http://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by.svg" />
 The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
 
 <div style="padding-left: 2em;">
@@ -149,6 +210,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Claudia Andrade (Instituto de la Patagonia, Universidad de Magallanes)
 - Ma&euml;lle Connan (Nelson Mandela Metropolitan University, South Africa)
 - Hauke Flores (Alfred Wegener Institute, Germany)
+- Yi-Ming Gan (Royal Belgian Institute of Natural Sciences, Belgium)
 - Luis H&uuml;ckst&auml;dt (University of California Santa Cruz, USA)
 - Mary-Anne Lea (Institute for Marine and Antarctic Studies, Australia)
 - Julie McInnes (Institute for Marine and Antarctic Studies, Australia)
@@ -162,7 +224,7 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 
 ### Data contributors
 
-- Claudia Andrade, Thomas Brey, and colleagues (subantarctic South American isotopes and diet)
+- Claudia Andrade, Thomas Brey, and colleagues (subantarctic South American isotopes and diet, data entry)
 - Australian Antarctic Data Centre (the Southern Ocean dietary database was used to seed this new, larger database effort)
 - Laurence Clarke and colleagues (mesopelagic fish diet from gut DNA)
 - Alison Cleary and colleagues (krill diet from gut DNA)
@@ -175,7 +237,9 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 - Lo&iuml;c Michel, Gilles Lepoint, and colleagues (benthic stable isotopes)
 - Baptiste Le Bourg, Camille Moreau, Gilles Lepoint, Lo&iuml;c Michel (sea star isotopes and morphological measurements)
 - Ryan Reisinger (Marion Island stable isotopes)
+- Crist&oacute;bal Rivera (data entry)
 - Fokje Schaafsma and colleagues (energetics)
+- Taryn Sep&uacute;lveda (data entry)
 - Arnaud Tarroux, Kit Kovacs, and colleagues (seal and penguin stable isotopes)
 - Megan Tierney (Macquarie Island fish energetics)
 - Anton van de Putte, Filip Volckaert (energetics)
@@ -185,5 +249,10 @@ Antarctic or Southern Ocean researchers holding relevant data, or interested in 
 
 ## References
 
-`r kable(xs, format="html") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+```{r refs, cache = FALSE}
+kable(xs %>% mutate(DOI = case_when(grepl("https?://[dx]*\\.?doi\\.org/10\\.", .data$DOI) ~ sub("^https?://[dx]*\\.?doi\\.org/", "", .data$DOI), TRUE ~ .data$DOI),
+                    DOI = case_when(grepl("^10\\.", .data$DOI) ~ paste0("<a href=\"https://doi.org/", .data$DOI, "\" target=\"_blank\">", .data$DOI, "</a>"), TRUE ~ .data$DOI)),
+      format = "html", escape = FALSE) %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+```
 
