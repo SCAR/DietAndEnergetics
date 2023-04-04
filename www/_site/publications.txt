@@ -1,5 +1,0 @@
-To add to the main page, at some point:
-
-- McCormack S, Melbourne-Thomas J, Trebilco R, Constable A, Blanchard J (2018) Energy Flow in Southern Ocean Ecosystems - A Food Web Model of Prydz Bay, Antarctica April 2018 DOI: 10.13140/RG.2.2.15979.64807 Conference: Marine Ecosystem Assessment for the Southern Ocean (MEASO2018) At: Hobart, Tasmania
-
-- McCormack S, Melbourne-Thomas J, Trebilco R, Blanchard J, Constable A (2017) Simplification of complex ecological networks - species aggregation in Antarctic food web models December 2017 Conference: MODSIM 2017 (Managing cumulative risks through model-based processes) At: Hobart, Australia

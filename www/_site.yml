@@ -1,6 +1,6 @@
 name: "Southern Ocean Diet and Energetics Database"
 output_dir: _site
-exclude: ["*~"]
+exclude: ["*~", "Dockerfile"]
 output:
   html_document:
     theme: lumen
