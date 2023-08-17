@@ -13,7 +13,7 @@ library(knitr)
 library(kableExtra)
 library(dplyr)
 library(lubridate)
-library(leaflet)
+library(leaflet) ## nb v2.0.1 used due to problems with 2.0.2
 requireNamespace("circular")
 
 ## do we need to update caches?
@@ -84,7 +84,7 @@ all_stats <- bind_rows(xd %>% dplyr::summarize("Data type" = "Dietary sample dat
 
 # {.tabset}
 
-Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on <a href="http://www.scar.org/ssg/life-sciences/eg-abi" target="_blank" rel="noopener noreferrer">Antarctic Biodiversity Informatics (EG-ABI)</a> and <a href="http://www.scar.org/ssg/life-sciences/bamm" target="_blank" rel="noopener noreferrer">Birds and Marine Mammals (EG-BAMM)</a> are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
+Information related to diet and energy flow is fundamental to a diverse range of Antarctic and Southern Ocean biological and ecosystem studies. The SCAR Expert Groups on <a href="https://www.scar.org/ssg/life-sciences/eg-abi" target="_blank" rel="noopener noreferrer">Antarctic Biodiversity Informatics (EG-ABI)</a> and <a href="https://www.scar.org/ssg/life-sciences/bamm" target="_blank" rel="noopener noreferrer">Birds and Marine Mammals (EG-BAMM)</a> are collating a centralised database of such information to assist the scientific community in this work. It includes data related to diet and energy flow from conventional (e.g. gut content) and modern (e.g. molecular) studies, stable isotopes, fatty acids, and energetic content. It is a product of the SCAR community and open for all to participate in and use.
 
 <div style="height: 20px;"></div>
 
@@ -162,7 +162,7 @@ m %>% addMarkers(lng = tempd$lon, lat = tempd$lat, group = "diet", clusterOption
 
 ## Data access
 
-Detailed data information can be found in the <a href="https://data.aad.gov.au/metadata/records/SCAR_Diet_Energetics" target="_blank" rel="noopener noreferrer">metadata record</a>, and the data can be downloaded from <a href="https://zenodo.org/record/3973742" target="_blank" rel="noopener noreferrer">Zenodo</a>.
+The data, along with detailed metdata, can be downloaded from <a href="`r paste0("https://doi.org/", sohungry:::so_default_doi())`" target="_blank" rel="noopener noreferrer">Zenodo</a>.
 
 Access is also possible via the R packages <a href="https://github.com/SCAR/sohungry" target="_blank" rel="noopener noreferrer">sohungry</a> (for data) and <a href="https://github.com/SCAR/solong" target="_blank" rel="noopener noreferrer">solong</a> (for allometric equations).
 
@@ -174,7 +174,7 @@ doi_link_md <- paste0("<a href=\"https://doi.org/", current_doi, "\" target=\"_b
 
 ```
 
-<img style="float:right;" src="http://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by.svg" />
+<img style="float:right;" src="https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by.svg" />
 The database is released under a CC-BY license: please cite these data when using. If you have used data from a small number of individual sources (check the `source_id` and `source_details` values of the data you used), please cite the original data sources and additionally acknowledge this database. For example:
 
 <div style="padding-left: 2em;">
@@ -197,12 +197,12 @@ As well as providing data access, the R packages mentioned above also provide fu
 
 ### See also
 
-The <a href="https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html" target="_blank" rel="noopener noreferrer">project update</a> presented at the <a href="http://www.measo2018.aq/" target="_blank" rel="noopener noreferrer">MEASO 2018 conference</a> that was held in Hobart, April 2018.
+The <a href="https://scar.github.io/DietAndEnergetics/talks/measo2018/index.html" target="_blank" rel="noopener noreferrer">project update</a> presented at the MEASO 2018 conference that was held in Hobart, April 2018.
 
 
 ## People
 
-Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to <a href="http://www.scar.org/eg-abi/abi-contact" target="_blank" rel="noopener noreferrer">make contact</a>.
+Antarctic or Southern Ocean researchers holding relevant data, or interested in using such data in their work, are encouraged to <a href="https://www.scar.org/eg-abi/abi-contact" target="_blank" rel="noopener noreferrer">make contact</a>.
 
 ### Core project working group
 
