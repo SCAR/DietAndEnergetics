@@ -1,6 +1,6 @@
 name: "Southern Ocean Diet and Energetics Database"
 output_dir: _site
-exclude: ["*~", "Dockerfile"]
+exclude: ["*~", "Dockerfile", "index2.Rmdx", "publications.txt", "fly.toml"]
 output:
   html_document:
     theme: lumen

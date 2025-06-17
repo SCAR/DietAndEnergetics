@@ -3,7 +3,8 @@ title: "Southern Ocean Diet and Energetics Database"
 ---
 
 <link rel="stylesheet" href="css/soded.css" type="text/css" />
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 ```{r setup, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 library(sohungry)
@@ -15,6 +16,7 @@ library(dplyr)
 library(lubridate)
 library(leaflet) ## nb v2.0.1 used due to problems with 2.0.2
 requireNamespace("circular")
+requireNamespace("ggsci")
 
 ## do we need to update caches?
 refresh_cache <- !any(difftime(Sys.time(), file.info(dir("index_cache/html", pattern = "^calcs_", full.names = TRUE))$mtime, units = "days") > 30)
@@ -22,9 +24,15 @@ refresh_cache <- !any(difftime(Sys.time(), file.info(dir("index_cache/html", pat
 knitr::opts_chunk$set(eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE, tidy = FALSE, cache = refresh_cache, include = TRUE, dpi = 72, fig.width = 7, fig.height = 7, fig.align = "center", results = "markup")
 options(knitr.table.format="html", knitr.kable.NA="")
 
-##map_style <- "polar"
-map_style <- "mercator"
+map_style <- "polar"
+## map_style <- "mercator"
 stopifnot(map_style %in% c("polar", "mercator"))
+
+if (map_style == "polar") {
+    library(polr) ## remotes::install_github("SCAR/polr")
+}
+
+cmap <- ggsci::pal_d3("category10")(6)[c(1:3, 5:6)] ## "#1F77B4FF" "#FF7F0EFF" "#2CA02CFF" "#9467BDFF" "#8C564BFF"
 
 ```
 
@@ -72,13 +80,15 @@ xs <- bind_rows(xd %>% dplyr::select(source_id, source_details, source_doi),
     is.na(DOI)~"",
     TRUE~DOI))
 
-all_stats <- bind_rows(xd %>% dplyr::summarize("Data type" = "Dietary sample data (gut content, etc)", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
-  xdna %>% dplyr::summarize("Data type" = "DNA diet data", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
-  xi %>% dplyr::summarize("Data type" = "Stable isotopes", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
-  xl %>% dplyr::summarize("Data type" = "Lipids", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
-  xe %>% dplyr::summarize("Data type" = "Energetics", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
-  sol_equations() %>% dplyr::summarize("Data type" = "Allometric equations", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(reference))##, "Last updated"=max(last_modified)
+all_stats <- bind_rows(xd %>% dplyr::summarize(icon = as.character(shiny::icon("map-marker", style = paste0("color:", cmap[1]))), "Data type" = "Dietary sample data (gut content, etc)", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xdna %>% dplyr::summarize(icon = as.character(shiny::icon("map-marker", style = paste0("color:", cmap[2]))), "Data type" = "DNA diet data", "Number of records" = n(), "Number of taxa" = n_distinct(c(predator_name,prey_name)), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xi %>% dplyr::summarize(icon = as.character(shiny::icon("map-marker", style = paste0("color:", cmap[3]))), "Data type" = "Stable isotopes", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xl %>% dplyr::summarize(icon = as.character(shiny::icon("map-marker", style = paste0("color:", cmap[4]))), "Data type" = "Lipids", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  xe %>% dplyr::summarize(icon = as.character(shiny::icon("map-marker", style = paste0("color:", cmap[5]))), "Data type" = "Energetics", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(source_id), "Last updated" = max(last_modified)),
+  sol_equations() %>% dplyr::summarize(icon = "", "Data type" = "Allometric equations", "Number of records" = n(), "Number of taxa" = n_distinct(taxon_name), "Number of studies" = n_distinct(reference))##, "Last updated"=max(last_modified)
 )
+
+names(all_stats)[1] <- ""
 
 ```
 
@@ -90,7 +100,7 @@ Information related to diet and energy flow is fundamental to a diverse range of
 
 ## Overview
 
-`r kable(all_stats, format="html", caption="<h3>Current status</h3>") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
+`r kable(all_stats, format="html", escape = FALSE, caption="<h3>Current status</h3>") %>% kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE)`
 
 
 <div style="margin-left: auto; margin-right: auto; margin-top: 50px; width: 80%;">
@@ -112,6 +122,47 @@ templ <- xl %>% group_by(source_id, lon, lat, taxon_name) %>% mutate(N=n()) %>% 
 popup_l <- sprintf("<p><strong>Lipids study:</strong> %d<br /><strong>Taxon:</strong> %s<br /><strong>N records:</strong> %d</p>",templ$source_id, templ$taxon_name, templ$N)
 
 if (map_style == "polar") {
+    bluemap <- grDevices::colorRampPalette(c("#54A3D1", "#60B3EB", "#78C8F0", "#98D1F5", "#B5DCFF", "#BDE1F0", "#CDEBFA", "#D6EFFF", "#EBFAFF","grey99", "grey90", "grey92", "grey94", "grey96", "white"))(30)
+    m <- polr::pol(view_options = list(extent = 12e6 * c(-1, -1, 1, 1)), width = "100%") %>%
+        ## add_wms_tiles(url = "https://geos.polarview.aq/geoserver/wms", layers = "polarview:coastS10", name = "Coastline") %>%
+        ## add_wmts_from_capabilities("https://services.arcgisonline.com/arcgis/rest/services/Polar/Antarctic_Imagery/MapServer/WMTS/1.0.0/WMTSCapabilities.xml", layer = "Polar_Antarctic_Imagery", zIndex = -1) %>% ##, wmts_options = list()
+        add_cog("https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/vlrast_eo_ps.tif", geotiff_source_options = list(interpolate = FALSE), name = "Background", zIndex = -1) %>%
+##        add_cog("https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/vlrast_eo.tif", geotiff_source_options = list(interpolate = FALSE), name = "Background LL", zIndex = -1) %>%
+##        add_cog("https://gebco2023.s3.valeria.science/gebco_2023_land_cog.tif", name = "GEBCO Bathymetry", zIndex = -1, geotiff_source_options = list(interpolate = FALSE),
+##                style = list(color = pol_colourmap(bluemap))) %>% ## https://data.raadsync.cloud.edu.au/raad/public/idea.public/gebco/gebco_2023_land_cog.tif
+
+        ## add_wmts_from_capabilities("https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/WMTS/1.0.0/WMTSCapabilities.xml", layer = "World_Imagery", zIndex = -1) %>% ## wmts_options = list(interpolate = FALSE, wrapX = FALSE) makes no difference to gaps at 180E
+
+        ## add_geojson(file = system.file("extdata/fronts_park.geojson", package = "polr"),
+        ##             style = pol_style(stroke = list(color = "green")), data_proj = "EPSG:4326",
+        ##             name = "Fronts") %>%
+        add_fgb(url = "https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/fronts_park.fgb", style = list(`stroke-color` = "black"), name = "Fronts") %>%
+
+        add_clustered_points(lon = tempd$lon, lat = tempd$lat, ##cluster_options = list(distance = 50),
+                             cluster_style = pol_style(text = list(fill = list(color = "black")), circle = list(fill = list(color = cmap[1]))),
+                             marker_style = pol_style(text = list(text = "\uf041", font = "normal 20px FontAwesome", fill = list(color = cmap[1]), stroke = list(color = "black"))),
+                             popup = popup_d, name = "Diet data") %>%
+        add_clustered_points(lon = tempdna$lon, lat = tempdna$lat,
+                             cluster_style = pol_style(text = list(fill = list(color = "black")), circle = list(fill = list(color = cmap[2]))),
+                             marker_style = pol_style(text = list(text = "\uf041", font = "normal 20px FontAwesome", fill = list(color = cmap[2]), stroke = list(color = "black"))),
+                             popup = popup_dna, name = "DNA diet data") %>%
+        add_clustered_points(lon = tempi$lon, lat = tempi$lat,
+                             cluster_style = pol_style(text = list(fill = list(color = "black")), circle = list(fill = list(color = cmap[3]))),
+                             marker_style = pol_style(text = list(text = "\uf041", font = "normal 20px FontAwesome", fill = list(color = cmap[3]), stroke = list(color = "black"))),
+                             popup = popup_i, name = "Isotopes data") %>%
+        add_clustered_points(lon = templ$lon, lat = templ$lat,
+                             cluster_style = pol_style(text = list(fill = list(color = "black")), circle = list(fill = list(color = cmap[4]))),
+                             marker_style = pol_style(text = list(text = "\uf041", font = "normal 20px FontAwesome", fill = list(color = cmap[4]), stroke = list(color = "black"))),
+                             popup = popup_l, name = "Lipids data") %>%
+        add_clustered_points(lon = tempe$lon, lat = tempe$lat,
+                             cluster_style = pol_style(text = list(fill = list(color = "white")), circle = list(fill = list(color = cmap[5]))),
+                             marker_style = pol_style(text = list(text = "\uf041", font = "normal 20px FontAwesome", fill = list(color = cmap[5]), stroke = list(color = "white"))),
+                             popup = popup_e, name = "Energetics data") %>%
+        add_graticule(lats = seq(-90, 0, by = 10)) %>%
+        add_layer_switcher()
+
+} else if (FALSE) {
+    ## leaflet polar
     crsAntartica <-  leafletCRS(
         crsClass = "L.Proj.CRS",
         code = "EPSG:3031",
@@ -145,16 +196,18 @@ if (map_style == "polar") {
             return superGetTileUrl.call(tileLayer, coords);
           };
        }")
+    ## add markers TODO
 } else {
     cluster_options <- markerClusterOptions()
-    m <- leaflet(width="100%") %>% addProviderTiles("Esri.WorldImagery")
+    m <- leaflet(width="100%") %>% addProviderTiles("Esri.WorldImagery") %>%
+        addMarkers(lng = tempd$lon, lat = tempd$lat, group = "diet", clusterOptions = cluster_options, popup = popup_d) %>% ##, label=tempd$place_name
+        addMarkers(lng = tempdna$lon, lat = tempdna$lat, group = "dna_diet", clusterOptions = cluster_options, popup = popup_dna) %>%
+        addMarkers(lng = tempi$lon, lat = tempi$lat, group = "isotopes", clusterOptions = cluster_options, popup = popup_i) %>%
+        addMarkers(lng = templ$lon, lat = templ$lat, group = "lipids", clusterOptions = cluster_options, popup = popup_l) %>%
+        addMarkers(lng = tempe$lon, lat = tempe$lat, group = "energetics", clusterOptions = cluster_options, popup = popup_e)
 }
 
-m %>% addMarkers(lng = tempd$lon, lat = tempd$lat, group = "diet", clusterOptions = cluster_options, popup = popup_d) %>% ##, label=tempd$place_name
-    addMarkers(lng = tempdna$lon, lat = tempdna$lat, group = "dna_diet", clusterOptions = cluster_options, popup = popup_dna) %>%
-    addMarkers(lng = tempi$lon, lat = tempi$lat, group = "isotopes", clusterOptions = cluster_options, popup = popup_i) %>%
-    addMarkers(lng = templ$lon, lat = templ$lat, group = "lipids", clusterOptions = cluster_options, popup = popup_l) %>%
-    addMarkers(lng = tempe$lon, lat = tempe$lat, group = "energetics", clusterOptions = cluster_options, popup = popup_e)
+m
 
 ```
 </div>
@@ -256,3 +309,8 @@ kable(xs %>% mutate(DOI = case_when(grepl("https?://[dx]*\\.?doi\\.org/10\\.", .
 
 ```
 
+<style>
+.pol-popup {
+    min-width: 240px;
+}
+</style>
