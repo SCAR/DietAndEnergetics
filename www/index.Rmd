@@ -126,7 +126,8 @@ if (map_style == "polar") {
     m <- polr::pol(view_options = list(extent = 12e6 * c(-1, -1, 1, 1)), width = "100%") %>%
         ## add_wms_tiles(url = "https://geos.polarview.aq/geoserver/wms", layers = "polarview:coastS10", name = "Coastline") %>%
         ## add_wmts_from_capabilities("https://services.arcgisonline.com/arcgis/rest/services/Polar/Antarctic_Imagery/MapServer/WMTS/1.0.0/WMTSCapabilities.xml", layer = "Polar_Antarctic_Imagery", zIndex = -1) %>% ##, wmts_options = list()
-        add_cog("https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/vlrast_eo_ps.tif", geotiff_source_options = list(interpolate = FALSE), name = "Background", zIndex = -1) %>%
+        add_cog("https://data.source.coop/scar/distant/supporting/EO-basemap_ps_cog.tif", ## "https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/vlrast_eo_ps.tif",
+                geotiff_source_options = list(interpolate = FALSE), name = "Background", zIndex = -1) %>%
 ##        add_cog("https://data.raadsync.cloud.edu.au/raad/public/idea.public/basemap/vlrast_eo.tif", geotiff_source_options = list(interpolate = FALSE), name = "Background LL", zIndex = -1) %>%
 ##        add_cog("https://gebco2023.s3.valeria.science/gebco_2023_land_cog.tif", name = "GEBCO Bathymetry", zIndex = -1, geotiff_source_options = list(interpolate = FALSE),
 ##                style = list(color = pol_colourmap(bluemap))) %>% ## https://data.raadsync.cloud.edu.au/raad/public/idea.public/gebco/gebco_2023_land_cog.tif
