@@ -1,7 +1,7 @@
 #' \pkg{dietdataentry}
 #'
 #' @description Functions for checking and entering data to the SCAR Southern Ocean Diet and Energetics Database
-#' 
+#'
 #' @name dietdataentry
 #' @docType package
 #' @references \url{https://scar.org/resources/southern-ocean-diet-energetics/}
@@ -19,4 +19,4 @@
 #' @importFrom stringr str_match_all str_split str_trim
 #' @importFrom worrms wm_classification wm_common_id wm_record wm_records_common wm_records_name wm_records_taxamatch
 #' @importFrom utils head str tail
-NULL
+"_PACKAGE"

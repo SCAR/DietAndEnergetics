@@ -2,6 +2,7 @@
 % Please edit documentation in R/dietdataentry.R
 \docType{package}
 \name{dietdataentry}
+\alias{dietdataentry-package}
 \alias{dietdataentry}
 \title{\pkg{dietdataentry}}
 \description{
@@ -9,4 +10,13 @@ Functions for checking and entering data to the SCAR Southern Ocean Diet and Ene
 }
 \references{
 \url{https://scar.org/resources/southern-ocean-diet-energetics/}
+}
+\author{
+\strong{Maintainer}: Ben Raymond \email{ben.raymond@aad.gov.au}
+
+Authors:
+\itemize{
+  \item Ben Raymond \email{ben.raymond@aad.gov.au}
+}
+
 }

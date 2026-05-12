@@ -62,10 +62,9 @@
 #'   ## or equivalently
 #'   search_worms("Lumbricidae", marine_only = FALSE)
 #'
-#' includes [Myopsida + Oegopsida] which are not demonstrated to form a clade
 #' }
 #' @export
-search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = FALSE, follow_valid = TRUE, like = FALSE, try_fuzzy = FALSE, cache_directory = worms_cache_dir(), acceptable_status = c("accepted", "temporary name", "uncertain@unacceptreason:unassessed", "uncertain@unacceptreason:requiring further investigation", "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium"), follow = c("unaccepted", "alternate representation"), filter = NULL, ...) {
+search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = FALSE, follow_valid = TRUE, like = FALSE, try_fuzzy = FALSE, cache_directory = worms_cache_dir(), acceptable_status = c("accepted", "temporary name", "uncertain@unacceptreason:unassessed", "uncertain@unacceptreason:requiring further investigation", "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium", "unreplaced junior homonym"), follow = c("unaccepted", "alternate representation", "alternative representation", "superseded combination"), filter = NULL, ...) {
     ## "nomen dubium" needed for Genaxinus bongraini, Teuthida but don't want it for some others
     do_cache <- TRUE
     if (missing(filter)) filter <- NULL
@@ -104,12 +103,12 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
     mwormsi_record <- function(...) {
         if (do_cache) {
             tryCatch(memoizedCall(wm_record, ...), ## memoized version that will cache results to disk
-                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         } else {
             args <- list(...)
             args <- args[!names(args) %in% c("force", "fuzzy")] ## drop the "force" argument, which only applied to memoizedCall
             tryCatch(do.call(wm_record, args), ## no caching of results
-                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         }
     }
 
@@ -118,12 +117,12 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
     mwormsi <- function(...) {
         if (do_cache) {
             tryCatch(memoizedCall(wm_records_name, ...), ## memoized version that will cache results to disk
-                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         } else {
             args <- list(...)
             args <- args[!names(args) %in% "force"] ## drop the "force" argument, which only applied to memoizedCall
             tryCatch(do.call(wm_records_name, args), ## no caching of results
-                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content|Not Found", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         }
     }
 
@@ -132,12 +131,12 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
     cwormsi <- function(...) {
         if (do_cache) {
             tryCatch(memoizedCall(wm_records_common, ...), ## memoized version that will cache results to disk
-                     error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         } else {
             args <- list(...)
             args <- args[!names(args) %in% "force"] ## drop the "force" argument, which only applied to memoizedCall
             tryCatch(do.call(wm_records_common, args), ## no caching of results
-                     error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+                     error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         }
     }
 
@@ -148,14 +147,14 @@ search_worms <- function(scientific = NULL, common = NULL, ids = NULL, force = F
             tryCatch({
                 res <- memoizedCall(wm_records_taxamatch, ...) ## memoized version that will cache results to disk
                 if (length(res) > 0) res <- res [[1]]
-            }, error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+            }, error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame() })
         } else {
             args <- list(...)
             args <- args[!names(args) %in% "force"] ## drop the "force" argument, which only applied to memoizedCall
             tryCatch({
                 res <- do.call(wm_records_taxamatch, args) ## no caching of results
                 if (length(res) > 0) res <- res [[1]]
-            }, error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else stop(conditionMessage(e)))
+            }, error = function(e) if (grepl("No Content", conditionMessage(e), ignore.case = TRUE)) return(data.frame()) else { warning(conditionMessage(e), immediate. = TRUE); data.frame(); })
         }
     }
 

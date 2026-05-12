@@ -709,6 +709,9 @@ parse_dna_diet <- function(filename, existing_names, worms_cache_directory = NUL
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
     if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
+    cat("Unique dates found in these records:\n  ")
+    temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
+    cat(paste(format(sort(temp)), collapse = ", "), "\n")
 
     cord <- columns_order("dna_diet")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
@@ -788,6 +791,7 @@ parse_diet <- function(filename, existing_names, worms_cache_directory = NULL, v
     for (k in force_lc) r[, k] <- sub(" dna ", " DNA ", tolower(r[, k])) ## but DNA uppercase
     for (k in "identification_method") r[, k] <- sub("(coi)", "(COI)", r[, k], fixed = TRUE) ## also (COI)
     for (k in "identification_method") r[, k] <- sub("(18s)", "(18S)", r[, k], fixed = TRUE) ## and (18S)
+    for (k in "identification_method") r[, k] <- sub("(16s)", "(16S)", r[, k], fixed = TRUE) ## and (16S)
 
     ## check unique values in columns with controlled vocabularies
     if (verbosity > 0) cat("Checking controlled vocabularies ...\n")
@@ -804,7 +808,6 @@ parse_diet <- function(filename, existing_names, worms_cache_directory = NULL, v
     temp <- check_names(ru$prey_name, ru$revised_prey_name, existing_table = taxon_table, existing_names = existing_names, cache_directory = worms_cache_directory, verbosity = verbosity, force = refresh_worms_cache, soki_group_as = "prey")
     unmatched_names <- sort(unique(c(unmatched_names, temp$unmatched_names)))
     taxon_table <- unique(rbind(taxon_table, temp$taxon_table))
-
     if (verbosity > 0) cat("\n")
 
     ## iterate through rows of r, parsing each record
@@ -960,7 +963,13 @@ parse_diet <- function(filename, existing_names, worms_cache_directory = NULL, v
     }
     if (verbosity > 0) cat(length(all_records), "diet data records parsed.\n")
     if (length(unmatched_names) > 0) cat("unmatched names: ", paste(unmatched_names, collapse = ", "), "\n")
+
     all_records <- do.call(rbind, lapply(all_records, as.data.frame, stringsAsFactors = FALSE))
+
+    cat("Unique dates found in these records:\n  ")
+    temp <- unique(na.omit(c(all_records$observation_date_start, all_records$observation_date_end)))
+    cat(paste(format(sort(temp)), collapse = ", "), "\n")
+
     cord <- columns_order("diet")
     if (!all(names(all_records) %in% cord)) stop("unexpected column names: ", paste(setdiff(names(all_records), cord), collapse = ", "))
     all_records <- all_records[, intersect(cord, names(all_records))]
@@ -1091,7 +1100,7 @@ check_names <- function(this_names, this_names_revised, existing_table, existing
             ## check against existing names
             if (length(existing_names)>0) {
                 temp_score <- stringsim(this_resolved_name, existing_names)
-                if (any(temp_score == 1)) {
+                if (any(temp_score == 1, na.rm = TRUE)) {
                     if (verbosity > 0) cat("  ++  exact match in existing trophic names\n")
                     temp_idx <- c()##which(temp_score>0.99)
                 } else {

@@ -16,8 +16,10 @@ search_worms(
   acceptable_status = c("accepted", "temporary name",
     "uncertain@unacceptreason:unassessed",
     "uncertain@unacceptreason:requiring further investigation",
-    "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium"),
-  follow = c("unaccepted", "alternate representation"),
+    "uncertain@unacceptreason:NA", "taxon inquirendum", "nomen dubium",
+    "unreplaced junior homonym"),
+  follow = c("unaccepted", "alternate representation", "alternative representation",
+    "superseded combination"),
   filter = NULL,
   ...
 )
@@ -98,6 +100,5 @@ This function is a wrapper around \code{\link[worrms]{wm_records_name}} and rela
   ## or equivalently
   search_worms("Lumbricidae", marine_only = FALSE)
 
-includes [Myopsida + Oegopsida] which are not demonstrated to form a clade
 }
 }
